@@ -1,6 +1,6 @@
 {
     "ignore": ["node_modules"],
     "watch": ["src"],
-    "exec": "node --trace-warnings -r dotenv/config dist/app/app.js",
+    "exec": "yarn build && node --trace-warnings -r dotenv/config dist/app/app.js",
     "ext": "ts"
   }
