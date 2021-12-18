@@ -1,0 +1,10 @@
+{
+  "name": "Bountybot",
+  "version": "0.0.0",
+  "description": "Discord bot client for the Bounty Board service. Made with love by the Bounty Board team and BanklessDao. ",
+  "main": "app.js",
+  "repository": "https://github.com/BanklessDAO/bountybot-.git",
+  "author": "BanklessDAO",
+  "license": "MIT",
+  "private": true
+}
