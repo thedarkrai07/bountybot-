@@ -15,33 +15,7 @@ export default class Bounty extends SlashCommand {
 			//TODO: make this dynamic?
 			guildIDs: ['905250069463326740'],
 			options: [
-				{
-					name: 'claim',
-					type: CommandOptionType.SUB_COMMAND,
-					description: 'Claim a bounty to work on',
-					options: [
-						{
-							name: 'bounty-id',
-							type: CommandOptionType.STRING,
-							description: 'Hash ID of the bounty',
-							required: true,
-						},
-					],
-				},
-				{
-					name: 'complete',
-					type: CommandOptionType.SUB_COMMAND,
-					description: 'Mark bounty as complete and reward the claimer',
-					options: [
-						{
-							name: 'bounty-id',
-							type: CommandOptionType.STRING,
-							description: 'Hash ID of the bounty',
-							required: true,
-						},
-					],
-				},
-				{
+                {
 					name: 'create',
 					type: CommandOptionType.SUB_COMMAND,
 					description: 'Create a new draft of a bounty and finalize on the website',
@@ -72,7 +46,7 @@ export default class Bounty extends SlashCommand {
 						},
 					],
 				},
-				{
+                {
 					name: 'publish',
 					type: CommandOptionType.SUB_COMMAND,
 					description: 'Validate discord handle drafted bounty from the website',
@@ -81,6 +55,57 @@ export default class Bounty extends SlashCommand {
 							name: 'bounty-id',
 							type: CommandOptionType.STRING,
 							description: 'Bounty hash ID',
+							required: true,
+						},
+					],
+				},
+				{
+					name: 'claim',
+					type: CommandOptionType.SUB_COMMAND,
+					description: 'Claim a bounty to work on',
+					options: [
+						{
+							name: 'bounty-id',
+							type: CommandOptionType.STRING,
+							description: 'Hash ID of the bounty',
+							required: true,
+						},
+					],
+				},
+                {
+					name: 'submit',
+					type: CommandOptionType.SUB_COMMAND,
+					description: 'Submit the bounty that you are working on. Bounty will be reviewed',
+					options: [
+						{
+							name: 'bounty-id',
+							type: CommandOptionType.STRING,
+							description: 'Hash ID of the bounty',
+							required: true,
+						},
+						{
+							name: 'url',
+							type: CommandOptionType.STRING,
+							description: 'Url of work',
+							required: false,
+						},
+						{
+							name: 'notes',
+							type: CommandOptionType.STRING,
+							description: 'any additional notes for bounty completion',
+							required: false,
+						},
+					],
+				},
+				{
+					name: 'complete',
+					type: CommandOptionType.SUB_COMMAND,
+					description: 'Mark bounty as complete and reward the claimer',
+					options: [
+						{
+							name: 'bounty-id',
+							type: CommandOptionType.STRING,
+							description: 'Hash ID of the bounty',
 							required: true,
 						},
 					],
@@ -133,31 +158,7 @@ export default class Bounty extends SlashCommand {
 						},
 					],
 				},
-				{
-					name: 'submit',
-					type: CommandOptionType.SUB_COMMAND,
-					description: 'Submit the bounty that you are working on. Bounty will be reviewed',
-					options: [
-						{
-							name: 'bounty-id',
-							type: CommandOptionType.STRING,
-							description: 'Hash ID of the bounty',
-							required: true,
-						},
-						{
-							name: 'url',
-							type: CommandOptionType.STRING,
-							description: 'Url of work',
-							required: false,
-						},
-						{
-							name: 'notes',
-							type: CommandOptionType.STRING,
-							description: 'any additional notes for bounty completion',
-							required: false,
-						},
-					],
-				},
+
                 {
 					name: 'gm',
 					type: CommandOptionType.SUB_COMMAND,
