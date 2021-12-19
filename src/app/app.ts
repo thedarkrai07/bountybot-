@@ -43,3 +43,5 @@ client.once('ready', () => {
 
 // Login to Discord with your client's token
 client.login(process.env.DISCORD_BOT_TOKEN);
+
+export default client;
