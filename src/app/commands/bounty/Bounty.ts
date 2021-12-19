@@ -4,8 +4,10 @@ import {
 	SlashCommand,
 	SlashCreator,
 } from 'slash-create';
-import { Guild, GuildMember } from 'discord.js';
-import client from '../../app';
+import AuthModule from '../../auth/discordBotAuth'
+import ValidationModule from '../../validation/commandValidation'
+import BountyActivityHandler from '../../activity/bounty/ActivityHandler'
+
 
 export default class Bounty extends SlashCommand {
 	constructor(creator: SlashCreator) {
@@ -158,11 +160,15 @@ export default class Bounty extends SlashCommand {
 						},
 					],
 				},
-
                 {
 					name: 'gm',
 					type: CommandOptionType.SUB_COMMAND,
 					description: 'GM GM GM GM',
+				},
+                {
+					name: 'help',
+					type: CommandOptionType.SUB_COMMAND,
+					description: 'FAQ for using bounty commands',
 				},
 			],
 			throttling: {
@@ -174,19 +180,11 @@ export default class Bounty extends SlashCommand {
 	}
 
 	async run(commandContext: CommandContext): Promise<any> {
-        switch (commandContext.subcommands[0]) {
-			case 'gm':
-                const { guildMember } = await this.getGuildAndMember(commandContext);
-                await commandContext.send({ content: `GM GM GM! <@${guildMember.id}>!` })
-                break;
-        }
-	}
+        await ValidationModule.isValidCommand(commandContext);
+        
+        await AuthModule.isAuth(commandContext);
 
-    async getGuildAndMember(ctx: CommandContext): Promise<{ guild: Guild, guildMember: GuildMember }> {
-		const guild = await client.guilds.fetch(ctx.guildID);
-		return {
-			guild: guild,
-			guildMember: await guild.members.fetch(ctx.user.id),
-		};
+        await BountyActivityHandler.run(commandContext);
+        
 	}
 }

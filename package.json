@@ -9,7 +9,7 @@
   "private": true,
   "scripts": {
     "dev": "nodemon",
-    "build": "tsc -p tsconfig.json",
+    "build": "rm -rf ./dist/ && tsc -p tsconfig.json",
     "prestart": "yarn install && yarn build",
     "start": "node --trace-warnings -r dotenv/config dist/app/app.js",
     "lint": "eslint ./src/app/**/*.ts --ext .ts",
