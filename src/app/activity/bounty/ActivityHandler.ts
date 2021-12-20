@@ -16,28 +16,29 @@ const BountyActivityHandler = {
     async run(commandContext: CommandContext): Promise<any> {
         switch (commandContext.subcommands[0]) {
             case 'create':
-                CreateBounty(commandContext)
+                await CreateBounty(commandContext);
                 break;
             case 'publish':
-                PublishBounty(commandContext)
+                await PublishBounty(commandContext);
                 break;
             case 'claim':
-                ClaimBounty(commandContext)
+                await ClaimBounty(commandContext);;
                 break;
             case 'submit':
-                SubmitBounty(commandContext)
+                await SubmitBounty(commandContext);
                 break;
             case 'complete':
-                CompleteBounty(commandContext)
+                await CompleteBounty(commandContext);
                 break;
             case 'list':
-                ListBounty(commandContext)
+                await ListBounty(commandContext);
                 break;
             case 'delete':
-                DeleteBounty(commandContext)
+                await DeleteBounty(commandContext);
                 break;
             case 'help':
-                HelpBounty(commandContext)
+                await HelpBounty(commandContext);
+                break;
 			case 'gm':
                 const { guildMember } = await BountyActivityHandler.getGuildAndMember(commandContext);
                 await commandContext.send({ content: `gm <@${guildMember.id}>!` })
