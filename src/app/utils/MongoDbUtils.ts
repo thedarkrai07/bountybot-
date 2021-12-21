@@ -16,11 +16,11 @@ const MongoDbUtils = {
 					w: 'majority',
 				},
 				useNewUrlParser: true,
-				useUnifiedTopology: true,
+				useUnifiedTopology: true
 			};
             // TODO: add to constants file
-			Log.debug(`Connection URI: ${process.env.MONGODB_URI + 'bountyboard'}`);
-			const mongoClient = await MongoClient.connect(process.env.MONGODB_URI);
+			Log.debug(`Connection URI: ${process.env.MONGODB_URI + '/' + database}`);
+			const mongoClient = await MongoClient.connect(process.env.MONGODB_URI + '/' + database, options);
 			MongoDbUtils.state.clientMap.set(database, mongoClient);
 			MongoDbUtils.state.dbMap.set(database, mongoClient.db(database));
 			db = mongoClient.db();

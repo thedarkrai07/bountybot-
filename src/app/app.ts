@@ -2,6 +2,9 @@
 import { Client, Intents } from 'discord.js';
 import { SlashCreator, GatewayServer, SlashCommand, CommandContext } from 'slash-create';
 import path from 'path';
+import Log from './utils/Log';
+
+new Log();
 
 // Create a new client instance
 const client = new Client({

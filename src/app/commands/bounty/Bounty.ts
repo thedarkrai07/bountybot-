@@ -132,7 +132,11 @@ export default class Bounty extends SlashCommand {
 								},
 								{
 									name: 'drafted by me',
-									value: 'DRAFT_BY_ME',
+									value: 'DRAFTED_BY_ME',
+								},
+                                {
+									name: 'claimed by me and completed',
+									value: 'CLAIMED_BY_ME_AND_COMPLETE',
 								},
 								{
 									name: 'open',
