@@ -10,9 +10,10 @@ import HelpBounty from './Help'
 
 import { Guild, GuildMember } from 'discord.js';
 import client from '../../app';
-import Log, { LogUtils } from '../../utils/Log'
+import Log, { LogUtils } from '../../utils/Log';
 
-import ValidationError from '../../errors/ValidationError'
+import ValidationError from '../../errors/ValidationError';
+import RuntimeError from '../../errors/RuntimeError';
 
 const BountyActivityHandler = {
     async run(commandContext: CommandContext): Promise<any> {
@@ -50,8 +51,6 @@ const BountyActivityHandler = {
                 const { guildMember } = await BountyActivityHandler.getGuildAndMember(commandContext);
                 await commandContext.send({ content: `gm <@${guildMember.id}>!` })
                 break;
-            default:
-                return commandContext.send(`${commandContext.user.mention} Command not recognized. Please try again.`);
         }
         return BountyActivityHandler.after(commandContext, command);
     },
@@ -61,10 +60,10 @@ const BountyActivityHandler = {
 			return commandContext.initiallyResponded ? null : commandContext.send(`${commandContext.user.mention} Sent you a DM with information.`);
 		}).catch(e => {
 			if (e instanceof ValidationError) {
-				return commandContext.send(e.message);
+				throw new ValidationError(e.message);
 			} else {
 				LogUtils.logError('error', e);
-				return commandContext.send('Sorry something is not working and our devs are looking into it.');
+				throw new RuntimeError(e);
 			}
 		});
 	},

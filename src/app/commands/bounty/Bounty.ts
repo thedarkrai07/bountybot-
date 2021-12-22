@@ -4,9 +4,11 @@ import {
 	SlashCommand,
 	SlashCreator,
 } from 'slash-create';
-import AuthModule from '../../auth/discordBotAuth'
-import ValidationModule from '../../validation/commandValidation'
-import BountyActivityHandler from '../../activity/bounty/ActivityHandler'
+import AuthModule from '../../auth/discordBotAuth';
+import ValidationModule from '../../validation/commandValidation';
+import BountyActivityHandler from '../../activity/bounty/ActivityHandler';
+import ValidationError from '../../errors/ValidationError';
+import { LogUtils } from '../../utils/Log';
 
 
 export default class Bounty extends SlashCommand {
@@ -184,11 +186,23 @@ export default class Bounty extends SlashCommand {
 	}
 
 	async run(commandContext: CommandContext): Promise<any> {
-        await ValidationModule.isValidCommand(commandContext);
+        // TODO: migrate to adding handlers to array
         
-        await AuthModule.isAuth(commandContext);
+        try {
+            await ValidationModule.isValidCommand(commandContext);
+        
+            await AuthModule.isAuth(commandContext);
 
-        await BountyActivityHandler.run(commandContext);
+            await BountyActivityHandler.run(commandContext);
+        }
+        catch(e) {
+			if (e instanceof ValidationError) {
+				return commandContext.send(e.message);
+			} else {
+				LogUtils.logError('error', e);
+				return commandContext.send('Sorry something is not working and our devs are looking into it.');
+			}
+		}
         
 	}
 }

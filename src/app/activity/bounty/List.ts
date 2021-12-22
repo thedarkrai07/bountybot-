@@ -42,9 +42,6 @@ export default async (commandContext: CommandContext): Promise<any> => {
 	case 'IN_PROGRESS':
 		dbRecords = dbBounty.find({ status: 'In-Progress', 'customerId': guildId }).limit(DB_RECORD_LIMIT);
 		break;
-	default:
-		Log.info('invalid list-type');
-		return commandContext.send({ content: 'Please select a valid list-type from the command menu' });
 	}
 	if (!await dbRecords.hasNext()) {
 		return commandContext.send({ content: 'We couldn\'t find any bounties!' });
