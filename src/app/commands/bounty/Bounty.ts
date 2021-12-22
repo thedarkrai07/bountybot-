@@ -187,6 +187,11 @@ export default class Bounty extends SlashCommand {
 
 	async run(commandContext: CommandContext): Promise<any> {
         // TODO: migrate to adding handlers to array
+            // core-logic of any Activity:
+            // Auth check
+            // validate/sanitize user input
+            // Parse user input into database/api call
+            // API response --> user success handling or user failure handling
         
         try {
             await ValidationModule.isValidCommand(commandContext);

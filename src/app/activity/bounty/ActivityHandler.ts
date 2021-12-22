@@ -22,6 +22,7 @@ const BountyActivityHandler = {
         let command: Promise<any>;
 
         Log.debug('Reached Activity Handler')
+        try {
         switch (commandContext.subcommands[0]) {
             case 'create':
                 command = CreateBounty(commandContext);
@@ -53,6 +54,9 @@ const BountyActivityHandler = {
                 break;
         }
         return BountyActivityHandler.after(commandContext, command);
+    } catch (e) {
+        Log.error(e)
+    }
     },
 
     after(commandContext: CommandContext, command: Promise<any>): void {
@@ -60,10 +64,11 @@ const BountyActivityHandler = {
 			return commandContext.initiallyResponded ? null : commandContext.send(`${commandContext.user.mention} Sent you a DM with information.`);
 		}).catch(e => {
 			if (e instanceof ValidationError) {
+                Log.info(e.message);
 				throw new ValidationError(e.message);
 			} else {
 				LogUtils.logError('error', e);
-				throw new RuntimeError(e);
+				commandContext.send('You really banged this up this time didn\'t you behold');
 			}
 		});
 	},

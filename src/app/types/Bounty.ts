@@ -1,24 +1,24 @@
-import { Collection, Int32, ObjectId } from 'mongodb';
+import { Int32, ObjectId } from 'mongodb';
 
-export interface BountyCollection extends Collection {
-	_id: ObjectId,
-	season: string,
+export interface Bounty {
+	_id?: ObjectId,
+	season?: string,
 	title: string,
 	description: string,
 	criteria: string,
 	reward: Reward,
-	createdBy: UserObject,
-	claimedBy: UserObject,
-	submittedBy: UserObject,
-	reviewedBy: UserObject,
+	createdBy?: UserObject,
+	claimedBy?: UserObject,
+	submittedBy?: UserObject,
+	reviewedBy?: UserObject,
 	createdAt: string,
 	dueAt: string,
-	status: string,
-	//TODO: update to Status[]
-	statusHistory: string[],
-	discordMessageId: string,
+	status?: string,
+	statusHistory: Status[],
+	discordMessageId?: string,
 	customerId: string,
-	gate: string[],
+	customer_id: string,
+	gate?: string[],
 }
 
 export type UserObject = {
@@ -31,6 +31,7 @@ export type Reward = {
 	currency: string,
 	amount: Int32,
 	scale: Int32,
+	amountWithoutScale: Int32,
 };
 
 export type Status = {

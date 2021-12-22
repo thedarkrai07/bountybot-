@@ -3,7 +3,7 @@ import MongoDbUtils  from '../../utils/MongoDbUtils';
 import { Cursor, Db } from 'mongodb';
 import { GuildMember, MessageEmbedOptions } from 'discord.js';
 import Log from '../../utils/Log';
-import { BountyCollection } from '../../types/BountyCollection';
+import { Bounty } from '../../types/Bounty';
 import DiscordUtils from '../../utils/DiscordUtils';
 import ValidationError from '../../errors/ValidationError';
 
@@ -52,7 +52,7 @@ export default async (commandContext: CommandContext): Promise<any> => {
 const sendMultipleMessages = async (guildMember: GuildMember, dbRecords: Cursor, guildId: string): Promise<any> => {
 	const listOfBounties = [];
 	while (listOfBounties.length < 10 && await dbRecords.hasNext()) {
-		const record: BountyCollection = await dbRecords.next();
+		const record: Bounty = await dbRecords.next();
 		const messageOptions: MessageEmbedOptions = await generateListEmbedMessage(record, record.status, guildId);
 		listOfBounties.push(messageOptions);
 	}
@@ -61,7 +61,7 @@ const sendMultipleMessages = async (guildMember: GuildMember, dbRecords: Cursor,
 };
 
 // TODO: better as shared function
-export const generateListEmbedMessage = async (dbBounty: BountyCollection, newStatus: string, guildID: string): Promise<MessageEmbedOptions> => {
+export const generateListEmbedMessage = async (dbBounty: Bounty, newStatus: string, guildID: string): Promise<MessageEmbedOptions> => {
 	let messageEmbedOptions: MessageEmbedOptions = {
 		color: 1998388,
 		title: dbBounty.title,
