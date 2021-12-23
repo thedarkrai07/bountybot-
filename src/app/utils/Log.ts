@@ -81,6 +81,7 @@ class Log {
 	}
 }
 
+// This object should not be accessed in any handler
 export const LogUtils = {
 	logCommandStart(ctx: CommandContext): void {
 		Log.info(`/${ctx.commandName} ran ${ctx.user.username}#${ctx.user.discriminator}`, {
