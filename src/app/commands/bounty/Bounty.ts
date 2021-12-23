@@ -4,7 +4,7 @@ import {
 	SlashCommand,
 	SlashCreator,
 } from 'slash-create';
-import AuthModule from '../../auth/discordBotAuth';
+import AuthModule from '../../auth/commandAuth';
 import ValidationModule from '../../validation/commandValidation';
 import BountyActivityHandler from '../../activity/bounty/ActivityHandler';
 import ValidationError from '../../errors/ValidationError';

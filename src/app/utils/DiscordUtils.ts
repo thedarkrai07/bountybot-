@@ -37,6 +37,23 @@ const DiscordUtils = {
 
 		return messageText;
 	},
+
+    isAllowListedRole(guildMember: GuildMember, roles: string[]): boolean {
+		return DiscordUtils.hasSomeRole(guildMember, roles);
+	},
+
+    hasSomeRole(guildMember: GuildMember, roles: string[]): boolean {
+		for (const role of roles) {
+			if (DiscordUtils.hasRole(guildMember, role)) {
+				return true;
+			}
+		}
+		return false;
+	},
+
+    hasRole(guildMember: GuildMember, role: string): boolean {
+		return guildMember.roles.cache.some(r => r.id === role);
+	},
 }
 
 export default DiscordUtils;

@@ -4,7 +4,7 @@ import BountyUtils from '../utils/BountyUtils';
 import Log from '../utils/Log';
 
 const ValidationModule = {
-    async isValidCommand(commandContext: CommandContext): Promise<any> {
+    async isValidCommand(commandContext: CommandContext): Promise<void> {
         switch (commandContext.subcommands[0]) {
             case 'create':
                 return create(commandContext);
