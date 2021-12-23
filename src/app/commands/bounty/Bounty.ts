@@ -44,8 +44,8 @@ export default class Bounty extends SlashCommand {
 						},
 						{
 							name: 'gate',
-							type: CommandOptionType.MENTIONABLE,
-							description: 'Select a user or role that will have permissions to claim this bounty',
+							type: CommandOptionType.ROLE,
+							description: 'Select a role that will have permissions to claim this bounty',
 							required: false,
 						},
 					],
@@ -202,7 +202,7 @@ export default class Bounty extends SlashCommand {
         }
         catch(e) {
 			if (e instanceof ValidationError) {
-				return commandContext.send(e.message);
+				return commandContext.send(`<@${commandContext.user.id}>\n` + e.message);
 			} else {
 				LogUtils.logError('error', e);
 				return commandContext.send('Sorry something is not working and our devs are looking into it.');

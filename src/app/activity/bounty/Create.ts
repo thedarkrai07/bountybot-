@@ -1,7 +1,7 @@
 import { CommandContext } from 'slash-create'
 import { Bounty } from '../../types/Bounty';
 import Log, { LogUtils } from '../../utils/Log';
-import { Message, MessageOptions, GuildMember, DMChannel, AwaitMessagesOptions, MessageReaction } from 'discord.js';
+import { Role, Message, MessageOptions, GuildMember, DMChannel, AwaitMessagesOptions, MessageReaction } from 'discord.js';
 import DiscordUtils from '../../utils/DiscordUtils';
 import BountyUtils from '../../utils/BountyUtils';
 import MongoDbUtils from '../../utils/MongoDbUtils';
@@ -9,7 +9,6 @@ import { Db, InsertWriteOpResult, Double, Int32 } from 'mongodb'
 import ValidationError from '../../errors/ValidationError';
 import { finalizeBounty } from '../bounty/Publish'
 import { deleteBountyForValidId } from './Delete';
-import { convertTypeAcquisitionFromJson } from 'typescript';
 
 export default async (commandContext: CommandContext): Promise<any> => {
     const guildAndMember = await DiscordUtils.getGuildAndMember(commandContext);
@@ -43,15 +42,15 @@ export default async (commandContext: CommandContext): Promise<any> => {
             guildMember.send({ content: `<@${guildMember.user.id}>\n` + e.message})
         }
     }
-
-	if (commandContext.options.create.copies > 1) {
-		const totalReward = commandContext.options.create.reward.amount * commandContext.options.create.copies;
-		await guildMember.send({ content: `Are you sure you want to publish bounties with a \`total\` reward of \`${totalReward} ${commandContext.options.create.reward.split(' ')[1]}\`? (yes/no)` });
-		const amountConfirmation: string = await DiscordUtils.awaitUserDM(dmChannel, replyOptions);
-		if (!(amountConfirmation == 'yes' || amountConfirmation == 'YES' || amountConfirmation == 'Y' || amountConfirmation == 'Yes')) {
-			return guildMember.send({ content: 'Ok no problem, bounty deleted.' });
-		}
-	}
+    if (commandContext.options.create.copies > 1) {
+        const totalReward = commandContext.options.create.reward.split(' ')[0] * commandContext.options.create.copies;
+        await guildMember.send({ content: `Are you sure you want to publish bounties with a \`total\` reward of \`${totalReward} ${commandContext.options.create.reward.split(' ')[1]}\`? (yes/no)` });
+        const amountConfirmation: string = await DiscordUtils.awaitUserDM(dmChannel, replyOptions);
+        if (!(amountConfirmation == 'yes' || amountConfirmation == 'YES' || amountConfirmation == 'Y' || amountConfirmation == 'Yes')) {
+            guildMember.send({ content: 'Bounty deleted.' });
+            throw new ValidationError('<@${guildMember.user.id}> check DM for more information.');
+        }
+    }
 
 	let convertedDueDateFromMessage: Date;
 	do {
@@ -118,14 +117,8 @@ export default async (commandContext: CommandContext): Promise<any> => {
 	};
 
 	if(newBounty.gate) {
-		try {
-			const role = await DiscordUtils.getRoleFromRoleId(newBounty.gate[0], guildId);
-			messageOptions.embeds[0].fields.push({ name: 'Gated to', value: role.name, inline: false })
-		}
-		catch (error) {
-			Log.info(`Gate ${newBounty.gate} is not a Role`);
-            throw new ValidationError('Please gate this bounty to a role.');
-		}
+        const role: Role = await DiscordUtils.getRoleFromRoleId(newBounty.gate[0], guildId);
+        messageOptions.embeds[0].fields.push({ name: 'Gated to', value: role.name, inline: false });
 	}
 
 	await guildMember.send('Thank you! Does this look right?');
@@ -218,7 +211,7 @@ export const generateBountyRecord = (
 	};
 
 	if(ctxOptions.gate) {
-		bountyRecord.gate = ctxOptions.gate
+		bountyRecord.gate = [ctxOptions.gate]
 	}
 
 	return bountyRecord;

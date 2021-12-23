@@ -1,12 +1,13 @@
 import { CommandContext } from 'slash-create';
 import ValidationError from '../errors/ValidationError';
+import BountyUtils from '../utils/BountyUtils';
 import Log from '../utils/Log';
 
 const ValidationModule = {
     async isValidCommand(commandContext: CommandContext): Promise<any> {
         switch (commandContext.subcommands[0]) {
             case 'create':
-                return;
+                return create(commandContext);
             case 'publish':
                 return;
             case 'claim':
@@ -31,7 +32,18 @@ const ValidationModule = {
 
 export default ValidationModule;
 
-const list = async (commandContext: CommandContext): Promise<any> => {
+const create = async (commandContext: CommandContext): Promise<void> => {
+    const ctxOptions: { [key: string]: any } = commandContext.options.create;
+        BountyUtils.validateTitle(ctxOptions.title);
+
+        BountyUtils.validateReward(ctxOptions.reward);
+
+        BountyUtils.validateCopies(ctxOptions.copies);
+
+        await BountyUtils.validateGate(ctxOptions.gate, commandContext.guildID);
+}
+
+const list = async (commandContext: CommandContext): Promise<void> => {
     switch (commandContext.options.list['list-type']) { 
     case 'CREATED_BY_ME':
         return;

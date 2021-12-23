@@ -1,5 +1,6 @@
 import ValidationError from '../errors/ValidationError';
-import { LogUtils } from './Log';
+import Log, { LogUtils } from './Log';
+import DiscordUtils from '../utils/DiscordUtils'
 const BountyUtils = {
 
 validateDescription(description: string): void {
@@ -31,6 +32,60 @@ validateDate(date: string): Date {
     } catch (e) {
         LogUtils.logError('failed to validate date', e);
         throw new ValidationError('Please try `UTC` date in format yyyy-mm-dd, i.e 2021-08-15');
+    }
+},
+
+validateTitle(title: string): void {
+    const CREATE_TITLE_REGEX = /^[\w\s\W]{1,80}$/;
+    if (title == null || !CREATE_TITLE_REGEX.test(title)) {
+        throw new ValidationError( 
+            'Please enter a valid title: \n' +
+            '- 80 characters maximum\n ' +
+            '- alphanumeric\n ' +
+            '- special characters: .!@#$%&,?',
+        );
+    }
+},
+
+validateCopies(copies: number): void {
+    if (copies > 100 || copies < 1) {
+        throw new ValidationError('Copies must be between `1` and `100`. If you have any questions, please reach out to your favorite Bounty Board representative!');
+    }
+},
+
+validateReward(rewardInput: string): void {
+    const [stringAmount, symbol] = (rewardInput != null) ? rewardInput.split(' ') : [null, null];
+    const ALLOWED_CURRENCIES = ['BANK', 'ETH', 'BTC', 'USDC', 'USDT', 'TempCity', 'gOHM', 'LUSD', 'FOX', 'oneFOX'];
+    const isValidCurrency = (typeof symbol !== 'undefined') && (ALLOWED_CURRENCIES.find(element => {
+        return element.toLowerCase() === symbol.toLowerCase();
+    }) !== undefined);
+    const MAXIMUM_REWARD = 100000000.00;
+
+    if (!isValidCurrency) {
+        throw new ValidationError(
+            '- Specify a valid currency. The accepted currencies are:\n' +
+            `${ALLOWED_CURRENCIES.toString()}\n` +
+            'Please reach out to your favorite Bounty Board representative to expand this list!',
+        );
+    }
+    
+    const amount: number = Number(stringAmount);
+    if (Number.isNaN(amount) || !Number.isFinite(amount) || amount < 0 || amount > MAXIMUM_REWARD) {
+        throw new ValidationError(
+            'Please enter a valid decimal reward value: \n ' +
+            '- 0 minimum, 100 million maximum \n ' +
+            'Please reach out to your favorite Bounty Board representative to expand this range!',
+        );
+    }
+},
+
+async validateGate(gate: string, guildId: string): Promise<void> {
+    try {
+        await DiscordUtils.getRoleFromRoleId(gate, guildId);
+    }
+    catch (e) {
+        Log.info(`Gate ${gate} is not a Role`);
+        throw new ValidationError('Please gate this bounty to a role.');
     }
 },
 
