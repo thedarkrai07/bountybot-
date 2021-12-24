@@ -2,6 +2,9 @@ import { CommandContext } from 'slash-create';
 import ValidationError from '../errors/ValidationError';
 import BountyUtils from '../utils/BountyUtils';
 import Log from '../utils/Log';
+import mongo, { Db } from 'mongodb';
+import MongoDbUtils from '../utils/MongoDbUtils';
+import { BountyCollection } from '../types/BountyCollection';
 
 const ValidationModule = {
     async isValidCommand(commandContext: CommandContext): Promise<void> {
@@ -9,7 +12,7 @@ const ValidationModule = {
             case 'create':
                 return create(commandContext);
             case 'publish':
-                return;
+                return publish(commandContext);
             case 'claim':
                 return;
             case 'submit':
@@ -34,13 +37,36 @@ export default ValidationModule;
 
 const create = async (commandContext: CommandContext): Promise<void> => {
     const ctxOptions: { [key: string]: any } = commandContext.options.create;
-        BountyUtils.validateTitle(ctxOptions.title);
+    
+    BountyUtils.validateTitle(ctxOptions.title);
 
-        BountyUtils.validateReward(ctxOptions.reward);
+    BountyUtils.validateReward(ctxOptions.reward);
 
-        BountyUtils.validateCopies(ctxOptions.copies);
+    BountyUtils.validateCopies(ctxOptions.copies);
 
-        await BountyUtils.validateGate(ctxOptions.gate, commandContext.guildID);
+    await BountyUtils.validateGate(ctxOptions.gate, commandContext.guildID);
+}
+
+const publish = async (commandContext: CommandContext): Promise<void> => {
+    const ctxOptions: { [key: string]: any } = commandContext.options.publish;
+    
+    await BountyUtils.validateBountyId(ctxOptions['bounty-id']);
+
+    const db: Db = await MongoDbUtils.connect('bountyboard');
+    const dbCollectionBounties = db.collection('bounties');
+    const dbBountyResult: BountyCollection = await dbCollectionBounties.findOne({
+        _id: new mongo.ObjectId(commandContext.options.publish['bounty-id']),
+    });
+
+    if (!dbBountyResult) {
+        throw new ValidationError('Please select a valid bounty id to publish. ' +
+            'Check your previous DMs from bountybot for the correct id.')
+    }
+
+    if (dbBountyResult.status && dbBountyResult.status !== 'Draft') {
+        throw new ValidationError(`The bounty id you have selected is in status ${dbBountyResult.status}\n` +
+        `Check your previous DMs from bountybot for the correct id to publish.`)
+    }
 }
 
 const list = async (commandContext: CommandContext): Promise<void> => {

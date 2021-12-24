@@ -105,6 +105,16 @@ formatDisplayDate(dateIso: string): string {
     return (new Date(dateIso)).toLocaleString('en-US', options);
 },
 
+async validateBountyId(bountyId: string): Promise<any> {
+    const BOUNTY_ID_REGEX = /^[a-f\d]{24}$/i;
+    if ((bountyId == null || !BOUNTY_ID_REGEX.test(bountyId))) {
+        throw new ValidationError(
+            'Please enter a valid bounty hash ID: \n' +
+            ' - can be found on bountyboard website\n' +
+            ` - ${process.env.BOUNTY_BOARD_URL}`);
+    }
+},
+
 }
 
 export default BountyUtils;

@@ -22,7 +22,7 @@ export default class Bounty extends SlashCommand {
                 {
 					name: 'create',
 					type: CommandOptionType.SUB_COMMAND,
-					description: 'Create a new draft of a bounty and finalize on the website',
+					description: 'Create a new bounty',
 					options: [
 						{
 							name: 'title',
@@ -53,7 +53,7 @@ export default class Bounty extends SlashCommand {
                 {
 					name: 'publish',
 					type: CommandOptionType.SUB_COMMAND,
-					description: 'Validate discord handle drafted bounty from the website',
+					description: 'Publish your bounty for other users to claim.',
 					options: [
 						{
 							name: 'bounty-id',

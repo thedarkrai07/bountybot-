@@ -10,13 +10,12 @@ import DiscordUtils from '../../utils/DiscordUtils';
 import BountyUtils from '../../utils/BountyUtils';
 
 const Publish =  async (commandContext: CommandContext): Promise<any> => {
-    await commandContext.send({ content: `Mock Publish Bounty` });
+    const { guildMember } = await DiscordUtils.getGuildAndMember(commandContext);
+    await finalizeBounty(guildMember, commandContext.options.publish['bounty-id'], commandContext.guildID);
 }
 
 export const finalizeBounty = async (guildMember: GuildMember, bountyId: string, guildId: string) => {
     Log.info('starting to finalize bounty: ' + bountyId);
-    // await BountyUtils.validateBountyId(guildMember, bountyId);
-    // await BountyUtils.checkBountyExists(guildMember, dbBountyResult, bountyId);
 
     const [dbBountyResult, dbCustomerResult] = await getDbHandler(bountyId, guildId);
 	const messageOptions: MessageEmbedOptions = await generateEmbedMessage(dbBountyResult, 'Open', guildId);
