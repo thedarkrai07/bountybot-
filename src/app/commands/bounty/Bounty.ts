@@ -1,213 +1,305 @@
 import {
-	CommandContext,
-	CommandOptionType,
-	SlashCommand,
-	SlashCreator,
+    CommandContext,
+    CommandOptionType,
+    SlashCommand,
+    SlashCreator,
 } from 'slash-create';
-import AuthModule from '../../auth/commandAuth';
-import ValidationModule from '../../validation/commandValidation';
-import BountyActivityHandler from '../../activity/bounty/ActivityHandler';
+import { handler } from '../../activity/bounty/Handler';
+
 import ValidationError from '../../errors/ValidationError';
-import { LogUtils } from '../../utils/Log';
+import Log, { LogUtils } from '../../utils/Log';
+import { Request } from '../../requests/Request';
+import { Activities } from '../../constants/activities';
+import { CreateRequest } from '../../requests/CreateRequest';
+import { PublishRequest } from '../../requests/PublishRequest';
+import { ClaimRequest } from '../../requests/ClaimRequest';
+import { SubmitRequest } from '../../requests/SubmitRequest';
+import { CompleteRequest } from '../../requests/CompleteRequest';
+import { DeleteRequest } from '../../requests/DeleteRequest';
+import { ListRequest } from '../../requests/ListRequest';
+import { HelpRequest } from '../../requests/HelpRequest';
+import { GmRequest } from '../../requests/GmRequest';
+import AuthorizationError from '../../errors/AuthorizationError';
+import DiscordUtils from '../../utils/DiscordUtils';
 
 
 export default class Bounty extends SlashCommand {
-	constructor(creator: SlashCreator) {
-		super(creator, {
-			name: 'bounty',
-			description: 'List, create, claim, delete, and mark bounties complete',
-			//TODO: make this dynamic?
-			guildIDs: ['905250069463326740'],
-			options: [
+    constructor(creator: SlashCreator) {
+        super(creator, {
+            name: 'bounty',
+            description: 'List, create, claim, delete, and mark bounties complete',
+            //TODO: make this dynamic? - can pull guildId list by querying mongo from app.ts on startup
+            guildIDs: ['905250069463326740'],
+            options: [
                 {
-					name: 'create',
-					type: CommandOptionType.SUB_COMMAND,
-					description: 'Create a new bounty',
-					options: [
-						{
-							name: 'title',
-							type: CommandOptionType.STRING,
-							description: 'What should the bounty be called?',
-							required: true,
-						},
-						{
-							name: 'reward',
-							type: CommandOptionType.STRING,
-							description: 'What is the reward? (i.e 100 BANK)',
-							required: true,
-						},
-						{
-							name: 'copies',
-							type: CommandOptionType.INTEGER,
-							description: 'How many bounties should be published? (level 3+, max 100)',
-							required: false,
-						},
-						{
-							name: 'gate',
-							type: CommandOptionType.ROLE,
-							description: 'Select a role that will have permissions to claim this bounty',
-							required: false,
-						},
-					],
-				},
+                    name: Activities.create,
+                    type: CommandOptionType.SUB_COMMAND,
+                    description: 'Create a new bounty',
+                    options: [
+                        {
+                            name: 'title',
+                            type: CommandOptionType.STRING,
+                            description: 'What should the bounty be called?',
+                            required: true,
+                        },
+                        {
+                            name: 'reward',
+                            type: CommandOptionType.STRING,
+                            description: 'What is the reward? (i.e 100 BANK)',
+                            required: true,
+                        },
+                        {
+                            name: 'copies',
+                            type: CommandOptionType.INTEGER,
+                            description: 'How many bounties should be published? (level 3+, max 100)',
+                            required: false,
+                        },
+                        {
+                            name: 'gate',
+                            type: CommandOptionType.ROLE,
+                            description: 'Select a role that will have permissions to claim this bounty',
+                            required: false,
+                        },
+                    ],
+                },
                 {
-					name: 'publish',
-					type: CommandOptionType.SUB_COMMAND,
-					description: 'Publish your bounty for other users to claim.',
-					options: [
-						{
-							name: 'bounty-id',
-							type: CommandOptionType.STRING,
-							description: 'Bounty hash ID',
-							required: true,
-						},
-					],
-				},
-				{
-					name: 'claim',
-					type: CommandOptionType.SUB_COMMAND,
-					description: 'Claim a bounty to work on',
-					options: [
-						{
-							name: 'bounty-id',
-							type: CommandOptionType.STRING,
-							description: 'Hash ID of the bounty',
-							required: true,
-						},
-					],
-				},
+                    name: Activities.publish,
+                    type: CommandOptionType.SUB_COMMAND,
+                    description: 'Publish your bounty for other users to claim.',
+                    options: [
+                        {
+                            name: 'bounty-id',
+                            type: CommandOptionType.STRING,
+                            description: 'Bounty hash ID',
+                            required: true,
+                        },
+                    ],
+                },
                 {
-					name: 'submit',
-					type: CommandOptionType.SUB_COMMAND,
-					description: 'Submit the bounty that you are working on. Bounty will be reviewed',
-					options: [
-						{
-							name: 'bounty-id',
-							type: CommandOptionType.STRING,
-							description: 'Hash ID of the bounty',
-							required: true,
-						},
-						{
-							name: 'url',
-							type: CommandOptionType.STRING,
-							description: 'Url of work',
-							required: false,
-						},
-						{
-							name: 'notes',
-							type: CommandOptionType.STRING,
-							description: 'any additional notes for bounty completion',
-							required: false,
-						},
-					],
-				},
-				{
-					name: 'complete',
-					type: CommandOptionType.SUB_COMMAND,
-					description: 'Mark bounty as complete and reward the claimer',
-					options: [
-						{
-							name: 'bounty-id',
-							type: CommandOptionType.STRING,
-							description: 'Hash ID of the bounty',
-							required: true,
-						},
-					],
-				},
-				{
-					name: 'list',
-					type: CommandOptionType.SUB_COMMAND,
-					description: 'View list of bounties you created or are claimed',
-					options: [
-						{
-							name: 'list-type',
-							type: CommandOptionType.STRING,
-							description: 'Which bounties should be displayed?',
-							choices: [
-								{
-									name: 'created by me',
-									value: 'CREATED_BY_ME',
-								},
-								{
-									name: 'claimed by me',
-									value: 'CLAIMED_BY_ME',
-								},
-								{
-									name: 'drafted by me',
-									value: 'DRAFTED_BY_ME',
-								},
+                    name: Activities.claim,
+                    type: CommandOptionType.SUB_COMMAND,
+                    description: 'Claim a bounty to work on',
+                    options: [
+                        {
+                            name: 'bounty-id',
+                            type: CommandOptionType.STRING,
+                            description: 'Hash ID of the bounty',
+                            required: true,
+                        },
+                    ],
+                },
+                {
+                    name: Activities.submit,
+                    type: CommandOptionType.SUB_COMMAND,
+                    description: 'Submit the bounty that you are working on. Bounty will be reviewed',
+                    options: [
+                        {
+                            name: 'bounty-id',
+                            type: CommandOptionType.STRING,
+                            description: 'Hash ID of the bounty',
+                            required: true,
+                        },
+                        {
+                            name: 'url',
+                            type: CommandOptionType.STRING,
+                            description: 'Url of work',
+                            required: false,
+                        },
+                        {
+                            name: 'notes',
+                            type: CommandOptionType.STRING,
+                            description: 'any additional notes for bounty completion',
+                            required: false,
+                        },
+                    ],
+                },
+                {
+                    name: Activities.complete,
+                    type: CommandOptionType.SUB_COMMAND,
+                    description: 'Mark bounty as complete and reward the claimer',
+                    options: [
+                        {
+                            name: 'bounty-id',
+                            type: CommandOptionType.STRING,
+                            description: 'Hash ID of the bounty',
+                            required: true,
+                        },
+                    ],
+                },
+                {
+                    name: Activities.list,
+                    type: CommandOptionType.SUB_COMMAND,
+                    description: 'View list of bounties you created or are claimed',
+                    options: [
+                        {
+                            name: 'list-type',
+                            type: CommandOptionType.STRING,
+                            description: 'Which bounties should be displayed?',
+                            choices: [
                                 {
-									name: 'claimed by me and completed',
-									value: 'CLAIMED_BY_ME_AND_COMPLETE',
-								},
-								{
-									name: 'open',
-									value: 'OPEN',
-								},
-								{
-									name: 'in progress',
-									value: 'IN_PROGRESS',
-								},
-							],
-							required: true,
-						},
-					],
-				},
-				{
-					name: 'delete',
-					type: CommandOptionType.SUB_COMMAND,
-					description: 'Delete an open or in draft bounty',
-					options: [
-						{
-							name: 'bounty-id',
-							type: CommandOptionType.STRING,
-							description: 'Hash ID of the bounty',
-							required: true,
-						},
-					],
-				},
+                                    name: 'created by me',
+                                    value: 'CREATED_BY_ME',
+                                },
+                                {
+                                    name: 'claimed by me',
+                                    value: 'CLAIMED_BY_ME',
+                                },
+                                {
+                                    name: 'drafted by me',
+                                    value: 'DRAFTED_BY_ME',
+                                },
+                                {
+                                    name: 'claimed by me and completed',
+                                    value: 'CLAIMED_BY_ME_AND_COMPLETE',
+                                },
+                                {
+                                    name: 'open',
+                                    value: 'OPEN',
+                                },
+                                {
+                                    name: 'in progress',
+                                    value: 'IN_PROGRESS',
+                                },
+                            ],
+                            required: true,
+                        },
+                    ],
+                },
                 {
-					name: 'gm',
-					type: CommandOptionType.SUB_COMMAND,
-					description: 'GM GM GM GM',
-				},
+                    name: Activities.delete,
+                    type: CommandOptionType.SUB_COMMAND,
+                    description: 'Delete an open or in draft bounty',
+                    options: [
+                        {
+                            name: 'bounty-id',
+                            type: CommandOptionType.STRING,
+                            description: 'Hash ID of the bounty',
+                            required: true,
+                        },
+                    ],
+                },
                 {
-					name: 'help',
-					type: CommandOptionType.SUB_COMMAND,
-					description: 'FAQ for using bounty commands',
-				},
-			],
-			throttling: {
-				usages: 2,
-				duration: 1,
-			},
-			defaultPermission: true,
-		});
-	}
+                    name: 'gm',
+                    type: CommandOptionType.SUB_COMMAND,
+                    description: 'GM GM GM GM',
+                },
+                {
+                    name: Activities.help,
+                    type: CommandOptionType.SUB_COMMAND,
+                    description: 'FAQ for using bounty commands',
+                },
+            ],
+            throttling: {
+                usages: 2,
+                duration: 1,
+            },
+            defaultPermission: true,
+        });
+    }
 
-	async run(commandContext: CommandContext): Promise<any> {
+    /**
+     * Transform slash command to activity request and route through the correct handlers.
+     * Responsible for graceful error handling and status messages.
+     * Wrap all received error messages with a user mention.
+     * 
+     * @param commandContext 
+     * @returns empty promise for async calls
+     */
+    async run(commandContext: CommandContext): Promise<void> {
         // TODO: migrate to adding handlers to array
-            // core-logic of any Activity:
-            // Auth check
-            // validate/sanitize user input
-            // Parse user input into database/api call
-            // API response --> user success handling or user failure handling
-        
-        try {
-            await ValidationModule.isValidCommand(commandContext);
-        
-            await AuthModule.isAuth(commandContext);
-
-            await BountyActivityHandler.run(commandContext);
+        // core-logic of any Activity:
+        // Auth check
+        // validate/sanitize user input
+        // Parse user input into database/api call
+        // API response --> user success handling or user failure handling
+        Log.debug(`Slash command triggered for ${commandContext.subcommands[0]}`);
+        let request: any;
+        switch (commandContext.subcommands[0]) {
+            case Activities.create:
+                try {
+                request = new CreateRequest({
+                    commandContext: commandContext 
+                });
+                } catch (e) {
+                    Log.error(e);
+                }
+                break;
+            case Activities.publish:
+                request = new PublishRequest({
+                    commandContext: commandContext,
+                    messageReactionRequest: null,
+                    directRequest: null
+                });
+                break;
+            case Activities.claim:
+                request = new ClaimRequest({
+                    commandContext: commandContext,
+                    messageReactionRequest: null
+                });
+                break;
+            case Activities.submit:
+                request = new SubmitRequest({
+                    commandContext: commandContext,
+                    messageReactionRequest: null
+                });
+                break;
+            case Activities.complete:
+                request = new CompleteRequest({
+                    commandContext: commandContext,
+                    messageReactionRequest: null
+                });
+                break;
+            case Activities.list:
+                request = new ListRequest({
+                    commandContext: commandContext
+                });
+                break;
+            case Activities.delete:
+                request = new DeleteRequest({
+                    commandContext: commandContext,
+                    messageReactionRequest: null,
+                    directRequest: null
+                });
+                break;
+            case Activities.help:
+                request = new HelpRequest({
+                    commandContext: commandContext,
+                    messageReactionRequest: null
+                });
+                break;
+            case 'gm':
+                request = new GmRequest({
+                    commandContext : commandContext
+                })
+                break;
+            default:
+                await commandContext.send({content: 'Command not recognized.'});
+                break;
         }
-        catch(e) {
-			if (e instanceof ValidationError) {
-				return commandContext.send(`<@${commandContext.user.id}>\n` + e.message);
-			} else {
-				LogUtils.logError('error', e);
-				return commandContext.send('Sorry something is not working and our devs are looking into it.');
-			}
-		}
-        
-	}
+        const { guildMember } = await DiscordUtils.getGuildAndMember((request as Request).guildId, (request as Request).userId);
+
+        try {
+            await handler(request)
+        }
+        catch (e) {
+            if (e instanceof ValidationError) {
+                await guildMember.send(`<@${commandContext.user.id}>\n` + e.message);
+                commandContext.delete();
+                return;
+            } else if (e instanceof AuthorizationError) {
+                await guildMember.send(`<@${commandContext.user.id}>\n` + e.message);
+                commandContext.delete();
+                return;
+            }
+            else {
+                LogUtils.logError('error', e);
+                await guildMember.send('Sorry something is not working and our devs are looking into it.');
+                commandContext.delete();
+                return;
+            }
+        }
+
+        return commandContext.initiallyResponded ? null: commandContext.delete();
+
+    }
 }

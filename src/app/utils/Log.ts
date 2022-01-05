@@ -38,7 +38,7 @@ class Log {
 	static error(statement: string | any, options?: Omit<LogOptions, 'level'>): void {
 		if (process.env.NODE_ENV === 'development') {
 			// eslint-disable-next-line no-console
-			console.error(statement);
+			console.error(`${statement}\n+${JSON.stringify}`);
 		}
 		this.logger.error(statement, options);
 	}

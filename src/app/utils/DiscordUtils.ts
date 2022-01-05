@@ -1,7 +1,8 @@
-import { GuildMember, Role, Guild, DMChannel, AwaitMessagesOptions } from 'discord.js';
+import { GuildMember, Role, Guild, DMChannel, AwaitMessagesOptions, Message } from 'discord.js';
 import client from '../app';
 import { CommandContext } from 'slash-create';
 import ValidationError from '../errors/ValidationError';
+import { BountyEmbedFields } from '../constants/embeds';
 
 const DiscordUtils = {
     async getGuildMemberFromUserId(userId: string, guildID: string): Promise<GuildMember> {
@@ -14,11 +15,11 @@ const DiscordUtils = {
         return await guild.roles.fetch(roleId);
     },
 
-    async getGuildAndMember(ctx: CommandContext): Promise<{ guild: Guild, guildMember: GuildMember }> {
-        const guild = await client.guilds.fetch(ctx.guildID);
+    async getGuildAndMember(guildId: string, userId: string): Promise<{ guild: Guild, guildMember: GuildMember }> {
+        const guild = await client.guilds.fetch(guildId);
         return {
             guild: guild,
-            guildMember: await guild.members.fetch(ctx.user.id),
+            guildMember: await guild.members.fetch(userId),
         };
     },
 
@@ -54,6 +55,10 @@ const DiscordUtils = {
     hasRole(guildMember: GuildMember, role: string): boolean {
 		return guildMember.roles.cache.some(r => r.id === role);
 	},
+
+    getBountyIdFromEmbedMessage(message: Message): string {
+        return message.embeds[0].fields[BountyEmbedFields.bountyId].value;
+    },
 }
 
 export default DiscordUtils;

@@ -3,19 +3,17 @@ import { GuildMember, TextChannel, Message, MessageEmbedOptions } from 'discord.
 import Log from '../../utils/Log';
 import mongo, { Db, UpdateWriteOpResult } from 'mongodb';
 import MongoDbUtils from '../../utils/MongoDbUtils';
-import { BountyCollection } from '../../types/BountyCollection';
-import { CustomerCollection } from '../../types/CustomerCollection';
-import ValidationError from '../../errors/ValidationError';
+import { BountyCollection } from '../../types/bounty/BountyCollection';
+import { CustomerCollection } from '../../types/bounty/CustomerCollection';
 import DiscordUtils from '../../utils/DiscordUtils';
 import BountyUtils from '../../utils/BountyUtils';
+import { PublishRequest } from '../../requests/PublishRequest';
 
-const Publish =  async (commandContext: CommandContext): Promise<any> => {
-    const { guildMember } = await DiscordUtils.getGuildAndMember(commandContext);
-    await finalizeBounty(guildMember, commandContext.options.publish['bounty-id'], commandContext.guildID);
-}
-
-export const finalizeBounty = async (guildMember: GuildMember, bountyId: string, guildId: string) => {
-    Log.info('starting to finalize bounty: ' + bountyId);
+export const publishBounty = async (publishRequest: PublishRequest): Promise<any> => {
+    Log.info(`starting to finalize bounty: ${publishRequest.bountyId} from guild: ${publishRequest.guildId}`);
+    const bountyId = publishRequest.bountyId;
+    const guildId = publishRequest.guildId;
+    const { guildMember } = await DiscordUtils.getGuildAndMember(publishRequest.guildId, publishRequest.userId);
 
     const [dbBountyResult, dbCustomerResult] = await getDbHandler(bountyId, guildId);
 	const messageOptions: MessageEmbedOptions = await generateEmbedMessage(dbBountyResult, 'Open', guildId);
@@ -32,6 +30,7 @@ export const finalizeBounty = async (guildMember: GuildMember, bountyId: string,
 }
 
 const getDbHandler = async (bountyId: string, guildId: string): Promise<[BountyCollection, CustomerCollection]> => {
+    Log.debug(`Entered get DbHandler for publish`);
     const db: Db = await MongoDbUtils.connect('bountyboard');
 	const dbCollectionBounties = db.collection('bounties');
     const dbCollectionCustomers = db.collection('customers');
@@ -43,11 +42,7 @@ const getDbHandler = async (bountyId: string, guildId: string): Promise<[BountyC
 		status: 'Draft',
 	});
 
-    if (dbBountyResult.status != 'Draft') {
-		Log.info(`${bountyId} bounty is not drafted`);
-		throw new ValidationError('The bounty you selected is not a draft. Only draft bounties can be published.');
-	}
-
+    Log.debug(`Found: /n${JSON.stringify(dbBountyResult)}/n${JSON.stringify(dbCustomerResult)}`);
     return [dbBountyResult, dbCustomerResult];
 
 }
@@ -107,12 +102,9 @@ export const generateEmbedMessage = async (dbBounty: BountyCollection, newStatus
 		// 	text: '🏴 - claim | 🔄 - refresh | 📝 - edit | ❌ - delete',
 		// },
 		footer: {
-			text: '🏴 - claim | 🔄 - refresh | ❌ - delete',
+			text: '🏴 - claim | ❌ - delete',
 		},
 	};
-
-	let isUser = true;
-	let isRole = true;
 
 	if(dbBounty.gate) {
 			const role = await DiscordUtils.getRoleFromRoleId(dbBounty.gate[0], guildID);
@@ -121,6 +113,3 @@ export const generateEmbedMessage = async (dbBounty: BountyCollection, newStatus
 
 	return messageEmbedOptions;
 };
-
-
-export default Publish;

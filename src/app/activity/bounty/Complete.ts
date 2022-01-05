@@ -1,5 +1,6 @@
 import { CommandContext } from 'slash-create'
+import { CompleteRequest } from '../../requests/CompleteRequest';
 
-export default async (commandContext: CommandContext): Promise<any> => {
-    await commandContext.send({ content: `Mock Complete Bounty` });
+export const completeBounty = async (request: CompleteRequest): Promise<any> => {
+    await request.commandContext.send({ content: `Mock Complete Bounty` });
 }

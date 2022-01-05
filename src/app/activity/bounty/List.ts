@@ -1,19 +1,19 @@
-import { CommandContext } from 'slash-create';
 import MongoDbUtils  from '../../utils/MongoDbUtils';
 import { Cursor, Db } from 'mongodb';
 import { GuildMember, MessageEmbedOptions } from 'discord.js';
 import Log from '../../utils/Log';
-import { Bounty } from '../../types/Bounty';
+import { Bounty } from '../../types/bounty/Bounty';
 import DiscordUtils from '../../utils/DiscordUtils';
 import ValidationError from '../../errors/ValidationError';
+import { ListRequest } from '../../requests/ListRequest';
 
 const DB_RECORD_LIMIT = 10;
 
-export default async (commandContext: CommandContext): Promise<any> => {
-    const guildAndMember = await DiscordUtils.getGuildAndMember(commandContext);
+export const listBounty = async (request: ListRequest): Promise<any> => {
+    const guildAndMember = await DiscordUtils.getGuildAndMember(request.commandContext.guildID, request.commandContext.user.id);
     const guildMember: GuildMember = guildAndMember.guildMember;
     const guildId: string = guildAndMember.guild.id;
-    const listType: string = commandContext.options.list['list-type'];
+    const listType: string = request.listType;
 
     let dbRecords: Cursor;
     // TODO: move to constants
@@ -44,7 +44,7 @@ export default async (commandContext: CommandContext): Promise<any> => {
 		break;
 	}
 	if (!await dbRecords.hasNext()) {
-		return commandContext.send({ content: 'We couldn\'t find any bounties!' });
+		return request.commandContext.send({ content: 'We couldn\'t find any bounties!' });
 	}
 	return sendMultipleMessages(guildMember, dbRecords, guildId);
 };

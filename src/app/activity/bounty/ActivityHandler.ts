@@ -1,85 +1,86 @@
 import { CommandContext } from 'slash-create'
-import CreateBounty from './Create'
-import PublishBounty from './Publish'
-import ClaimBounty from './Claim'
-import SubmitBounty from './Submit'
-import CompleteBounty from './Complete'
-import ListBounty from './List'
-import DeleteBounty from './Delete'
-import HelpBounty from './Help'
+import { createBounty } from './Create'
+import { publishBounty } from './Publish'
+import { claimBounty } from './Claim'
+import { submitBounty } from './Submit'
+import { completeBounty } from './Complete'
+import { listBounty } from './List'
+import { deleteBounty } from './Delete'
+import { helpBounty } from './Help'
+
 
 import { Guild, GuildMember } from 'discord.js';
 import client from '../../app';
-import Log, { LogUtils } from '../../utils/Log';
+import Log from '../../utils/Log';
 
-import ValidationError from '../../errors/ValidationError';
-import RuntimeError from '../../errors/RuntimeError';
+import { CreateRequest } from '../../requests/CreateRequest'
+import { PublishRequest } from '../../requests/PublishRequest';
+import { ClaimRequest } from '../../requests/ClaimRequest';
+import { SubmitRequest } from '../../requests/SubmitRequest';
+import { CompleteRequest } from '../../requests/CompleteRequest';
+import { ListRequest } from '../../requests/ListRequest';
+import { DeleteRequest } from '../../requests/DeleteRequest';
+import { HelpRequest } from '../../requests/HelpRequest';
+import { Activities } from '../../constants/activities';
+import DiscordUtils from '../../utils/DiscordUtils';
+import { GmRequest } from '../../requests/GmRequest'
 
-const BountyActivityHandler = {
-    async run(commandContext: CommandContext): Promise<any> {
-        if (commandContext.user.bot) return;
+export const BountyActivityHandler = {
+    /**
+     * BountyActivityHandler::run is responsible for routing activity requests to the correct activity function.
+     * This function is not responsible for error handling or status messages to the user. 
+     * @param request 
+     * @returns an empty Promise for error handling and async calls
+     */
+    async run(request: any): Promise<void> {
 
         let command: Promise<any>;
 
         Log.debug('Reached Activity Handler')
-        try {
-        switch (commandContext.subcommands[0]) {
-            case 'create':
-                command = CreateBounty(commandContext);
+        Log.debug(request.activity)
+        // TODO in all activities, replace any use of request.commandContext with cherry picked fields 
+        //      from the commandContext object as top level fields of the [Activity]Request class
+        switch (request.activity) {
+            case Activities.create:
+                command = createBounty(request as CreateRequest);
                 break;
-            case 'publish':
-                command = PublishBounty(commandContext);
+            case Activities.publish:
+                command = publishBounty(request as PublishRequest);
                 break;
-            case 'claim':
-                command = ClaimBounty(commandContext);;
+            case Activities.claim:
+                command = claimBounty(request as ClaimRequest);
                 break;
-            case 'submit':
-                command = SubmitBounty(commandContext);
+            case Activities.submit:
+                command = submitBounty(request as SubmitRequest);
                 break;
-            case 'complete':
-                command = CompleteBounty(commandContext);
+            case Activities.complete:
+                command = completeBounty(request as CompleteRequest);
                 break;
-            case 'list':
-                command = ListBounty(commandContext);
+            case Activities.list:
+                command = listBounty(request as ListRequest);
                 break;
-            case 'delete':
-                command = DeleteBounty(commandContext);
+            case Activities.delete:
+                command = deleteBounty(request as DeleteRequest);
                 break;
-            case 'help':
-                command = HelpBounty(commandContext);
+            case Activities.help:
+                command = helpBounty(request as HelpRequest);
                 break;
-			case 'gm':
-                const { guildMember } = await BountyActivityHandler.getGuildAndMember(commandContext);
-                await commandContext.send({ content: `gm <@${guildMember.id}>!` })
+            case 'gm':
+                let gmRequest: GmRequest = request;
+                Log.debug(`${gmRequest.guildId}, ${gmRequest.userId}`)
+                const { guildMember } = await DiscordUtils.getGuildAndMember(gmRequest.guildId, gmRequest.userId);
+                await request.commandContext.send({ content: `gm <@${guildMember.id}>!` })
                 break;
         }
-        return BountyActivityHandler.after(commandContext, command);
-    } catch (e) {
-        Log.error(e)
-    }
+        return;
     },
 
-    after(commandContext: CommandContext, command: Promise<any>): void {
-		command.then(() => {
-			return commandContext.initiallyResponded ? null : commandContext.send(`${commandContext.user.mention} Sent you a DM with information.`);
-		}).catch(e => {
-			if (e instanceof ValidationError) {
-                Log.info(e.message);
-				throw new ValidationError(e.message);
-			} else {
-				LogUtils.logError('error', e);
-				commandContext.send('You really banged this up this time didn\'t you behold');
-			}
-		});
-	},
 
     async getGuildAndMember(ctx: CommandContext): Promise<{ guild: Guild, guildMember: GuildMember }> {
-		const guild = await client.guilds.fetch(ctx.guildID);
-		return {
-			guild: guild,
-			guildMember: await guild.members.fetch(ctx.user.id),
-		};
-	}
+        const guild = await client.guilds.fetch(ctx.guildID);
+        return {
+            guild: guild,
+            guildMember: await guild.members.fetch(ctx.user.id),
+        };
+    }
 }
-
-export default BountyActivityHandler;

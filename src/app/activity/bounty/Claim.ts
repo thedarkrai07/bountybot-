@@ -1,5 +1,7 @@
 import { CommandContext } from 'slash-create'
+import { ClaimRequest } from '../../requests/ClaimRequest';
 
-export default async (commandContext: CommandContext): Promise<any> => {
-    await commandContext.send({ content: `Mock Claim Bounty` });
+export const claimBounty = async (request: ClaimRequest): Promise<any> => {
+    
+    await request.commandContext.send({ content: `Mock Claim Bounty` });
 }

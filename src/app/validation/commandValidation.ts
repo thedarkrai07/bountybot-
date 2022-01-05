@@ -4,58 +4,65 @@ import BountyUtils from '../utils/BountyUtils';
 import Log from '../utils/Log';
 import mongo, { Db } from 'mongodb';
 import MongoDbUtils from '../utils/MongoDbUtils';
-import { BountyCollection } from '../types/BountyCollection';
+import { BountyCollection } from '../types/bounty/BountyCollection';
+import { Activities } from '../constants/activities';
+import { ListRequest } from '../requests/ListRequest';
+import { PublishRequest } from '../requests/PublishRequest';
+import { CreateRequest } from '../requests/CreateRequest';
 
 const ValidationModule = {
-    async isValidCommand(commandContext: CommandContext): Promise<void> {
-        switch (commandContext.subcommands[0]) {
-            case 'create':
-                return create(commandContext);
-            case 'publish':
-                return publish(commandContext);
-            case 'claim':
+    /**
+     * 
+     * @param request 
+     * @returns empty Promise for error handling or async calls
+     */
+    async run(request: any): Promise<void> {
+        Log.debug('Reached Validation Handler')
+        switch (request.activity) {
+            case Activities.create:
+                return create(request as CreateRequest);
+            case Activities.publish:
+                return publish(request as PublishRequest);
+            case Activities.claim:
                 return;
-            case 'submit':
+            case Activities.submit:
                 return;
-            case 'complete':
+            case Activities.complete:
                 return;
-            case 'list':
-                return list(commandContext);
-            case 'delete':
+            case Activities.list:
+                return list(request as ListRequest);
+            case Activities.delete:
                 return;
-            case 'help':
+            case Activities.help:
                 return;
 			case 'gm':
                 return;
             default:
-                throw new ValidationError(`${commandContext.user.mention} Command not recognized. Please try again.`);
+                throw new ValidationError(`Command not recognized. Please try again.`);
         }
     },
 };
 
 export default ValidationModule;
 
-const create = async (commandContext: CommandContext): Promise<void> => {
-    const ctxOptions: { [key: string]: any } = commandContext.options.create;
-    
-    BountyUtils.validateTitle(ctxOptions.title);
+const create = async (request: CreateRequest): Promise<void> => {
+    BountyUtils.validateTitle(request.title);
 
-    BountyUtils.validateReward(ctxOptions.reward);
+    BountyUtils.validateReward(request.reward);
 
-    BountyUtils.validateCopies(ctxOptions.copies);
+    BountyUtils.validateCopies(request.copies);
 
-    await BountyUtils.validateGate(ctxOptions.gate, commandContext.guildID);
+    await BountyUtils.validateGate(request.gate, request.guildId);
 }
 
-const publish = async (commandContext: CommandContext): Promise<void> => {
-    const ctxOptions: { [key: string]: any } = commandContext.options.publish;
+const publish = async (request: PublishRequest): Promise<void> => {
     
-    await BountyUtils.validateBountyId(ctxOptions['bounty-id']);
+    await BountyUtils.validateBountyId(request.bountyId);
 
     const db: Db = await MongoDbUtils.connect('bountyboard');
     const dbCollectionBounties = db.collection('bounties');
     const dbBountyResult: BountyCollection = await dbCollectionBounties.findOne({
-        _id: new mongo.ObjectId(commandContext.options.publish['bounty-id']),
+        _id: new mongo.ObjectId(request.bountyId),
     });
 
     if (!dbBountyResult) {
@@ -65,12 +72,13 @@ const publish = async (commandContext: CommandContext): Promise<void> => {
 
     if (dbBountyResult.status && dbBountyResult.status !== 'Draft') {
         throw new ValidationError(`The bounty id you have selected is in status ${dbBountyResult.status}\n` +
-        `Check your previous DMs from bountybot for the correct id to publish.`)
+        `Currently, only bounties with status draft can be published to the bounty channel.\n` +
+        `Please reach out to your favorite Bounty Board representative with any questions!`)
     }
 }
 
-const list = async (commandContext: CommandContext): Promise<void> => {
-    switch (commandContext.options.list['list-type']) { 
+const list = async (request: ListRequest): Promise<void> => {
+    switch (request.listType) { 
     case 'CREATED_BY_ME':
         return;
 	case 'CLAIMED_BY_ME':

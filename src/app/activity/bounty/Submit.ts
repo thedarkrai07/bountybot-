@@ -1,5 +1,5 @@
-import { CommandContext } from 'slash-create'
+import { SubmitRequest } from '../../requests/SubmitRequest';
 
-export default async (commandContext: CommandContext): Promise<any> => {
-    await commandContext.send({ content: `Mock Submit Bounty` });
+export const submitBounty = async (request: SubmitRequest): Promise<any> => {
+    await request.commandContext.send({ content: `Mock Submit Bounty` });
 }
