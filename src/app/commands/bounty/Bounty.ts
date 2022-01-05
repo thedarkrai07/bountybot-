@@ -216,13 +216,9 @@ export default class Bounty extends SlashCommand {
         let request: any;
         switch (commandContext.subcommands[0]) {
             case Activities.create:
-                try {
                 request = new CreateRequest({
                     commandContext: commandContext 
                 });
-                } catch (e) {
-                    Log.error(e);
-                }
                 break;
             case Activities.publish:
                 request = new PublishRequest({
@@ -284,7 +280,7 @@ export default class Bounty extends SlashCommand {
         catch (e) {
             if (e instanceof ValidationError) {
                 await guildMember.send(`<@${commandContext.user.id}>\n` + e.message);
-                commandContext.delete();
+                await commandContext.delete();
                 return;
             } else if (e instanceof AuthorizationError) {
                 await guildMember.send(`<@${commandContext.user.id}>\n` + e.message);
@@ -294,12 +290,12 @@ export default class Bounty extends SlashCommand {
             else {
                 LogUtils.logError('error', e);
                 await guildMember.send('Sorry something is not working and our devs are looking into it.');
-                commandContext.delete();
+                await commandContext.delete();
                 return;
             }
         }
 
-        return commandContext.initiallyResponded ? null: commandContext.delete();
+        return commandContext.initiallyResponded ? null: await commandContext.delete();
 
     }
 }

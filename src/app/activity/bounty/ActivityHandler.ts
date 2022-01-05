@@ -42,28 +42,28 @@ export const BountyActivityHandler = {
         //      from the commandContext object as top level fields of the [Activity]Request class
         switch (request.activity) {
             case Activities.create:
-                command = createBounty(request as CreateRequest);
+                await createBounty(request as CreateRequest);
                 break;
             case Activities.publish:
-                command = publishBounty(request as PublishRequest);
+                await publishBounty(request as PublishRequest);
                 break;
             case Activities.claim:
-                command = claimBounty(request as ClaimRequest);
+                await claimBounty(request as ClaimRequest);
                 break;
             case Activities.submit:
-                command = submitBounty(request as SubmitRequest);
+                await submitBounty(request as SubmitRequest);
                 break;
             case Activities.complete:
-                command = completeBounty(request as CompleteRequest);
+                await completeBounty(request as CompleteRequest);
                 break;
             case Activities.list:
-                command = listBounty(request as ListRequest);
+                await listBounty(request as ListRequest);
                 break;
             case Activities.delete:
-                command = deleteBounty(request as DeleteRequest);
+                await deleteBounty(request as DeleteRequest);
                 break;
             case Activities.help:
-                command = helpBounty(request as HelpRequest);
+                await helpBounty(request as HelpRequest);
                 break;
             case 'gm':
                 let gmRequest: GmRequest = request;
