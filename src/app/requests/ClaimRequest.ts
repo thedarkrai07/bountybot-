@@ -2,11 +2,15 @@ import { CommandContext } from 'slash-create'
 import { Request } from './Request'
 import { MessageReactionRequest } from '../types/discord/MessageReactionRequest';
 import { Activities } from '../constants/activities';
+import { Message } from 'discord.js';
+import DiscordUtils from '../utils/DiscordUtils';
 
 export class ClaimRequest extends Request {
     bountyId: string;
-    commandContext: CommandContext;
     
+    commandContext: CommandContext;
+    message: Message;
+
     constructor(args: {
         commandContext: CommandContext, 
         messageReactionRequest: MessageReactionRequest
@@ -22,6 +26,8 @@ export class ClaimRequest extends Request {
         else if (args.messageReactionRequest) {
             let messageReactionRequest: MessageReactionRequest = args.messageReactionRequest;
             super(Activities.claim, messageReactionRequest.message.guildId, messageReactionRequest.user.id, messageReactionRequest.user.bot);
+            this.message = messageReactionRequest.message;
+            this.bountyId = DiscordUtils.getBountyIdFromEmbedMessage(messageReactionRequest.message);
         }
     }
 }

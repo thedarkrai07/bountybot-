@@ -102,11 +102,17 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
             description: newBounty.description,
             fields: [
                 // TODO: figure out a way to explicitly match order with BountyEmbedFields
+                // static bountyId = 0;
+                // static criteria = 1;
+                // static reward = 2;
+                // static status = 3;
+                // static deadline = 4;
+                // static createdBy = 5;
                 { name: 'Bounty Id', value: listOfBountyIds[0], inline: false },
+                { name: 'Criteria', value: newBounty.criteria.toString() },
                 { name: 'Reward', value: newBounty.reward.amount + ' ' + newBounty.reward.currency, inline: true },
                 { name: 'Status', value: 'Open', inline: true },
                 { name: 'Deadline', value: BountyUtils.formatDisplayDate(newBounty.dueAt), inline: true },
-                { name: 'Criteria', value: newBounty.criteria.toString() },
                 { name: 'Created by', value: newBounty.createdBy.discordHandle.toString(), inline: true },
             ],
             timestamp: new Date().getTime(),

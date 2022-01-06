@@ -5,13 +5,13 @@ import ValidationError from '../errors/ValidationError';
 import { BountyEmbedFields } from '../constants/embeds';
 
 const DiscordUtils = {
-    async getGuildMemberFromUserId(userId: string, guildID: string): Promise<GuildMember> {
-        const guild = await client.guilds.fetch(guildID);
+    async getGuildMemberFromUserId(userId: string, guildId: string): Promise<GuildMember> {
+        const guild = await client.guilds.fetch(guildId);
         return await guild.members.fetch(userId);
     },
 
-    async getRoleFromRoleId(roleId: string, guildID: string): Promise<Role> {
-        const guild = await client.guilds.fetch(guildID);
+    async getRoleFromRoleId(roleId: string, guildId: string): Promise<Role> {
+        const guild = await client.guilds.fetch(guildId);
         return await guild.roles.fetch(roleId);
     },
 

@@ -1,7 +1,6 @@
-import { CommandContext } from 'slash-create';
 import ValidationError from '../errors/ValidationError';
 import BountyUtils from '../utils/BountyUtils';
-import Log from '../utils/Log';
+import Log, { LogUtils } from '../utils/Log';
 import mongo, { Db } from 'mongodb';
 import MongoDbUtils from '../utils/MongoDbUtils';
 import { BountyCollection } from '../types/bounty/BountyCollection';
@@ -9,6 +8,14 @@ import { Activities } from '../constants/activities';
 import { ListRequest } from '../requests/ListRequest';
 import { PublishRequest } from '../requests/PublishRequest';
 import { CreateRequest } from '../requests/CreateRequest';
+import { SubmitRequest } from '../requests/SubmitRequest';
+import { BountyStatus } from '../constants/bountyStatus';
+import { TextChannel } from 'discord.js';
+import DiscordUtils from '../utils/DiscordUtils';
+import { CustomerCollection } from '../types/bounty/CustomerCollection';
+import { ClaimRequest } from '../requests/ClaimRequest';
+import { CompleteRequest } from '../requests/CompleteRequest';
+
 
 const ValidationModule = {
     /**
@@ -17,25 +24,25 @@ const ValidationModule = {
      * @returns empty Promise for error handling or async calls
      */
     async run(request: any): Promise<void> {
-        Log.debug('Reached Validation Handler')
+        Log.debug(`Reached Validation Handler. Entering activity ${request.activity}`);
         switch (request.activity) {
             case Activities.create:
                 return create(request as CreateRequest);
             case Activities.publish:
                 return publish(request as PublishRequest);
             case Activities.claim:
-                return;
+                return claim(request as ClaimRequest);
             case Activities.submit:
-                return;
+                return submit(request as SubmitRequest);
             case Activities.complete:
-                return;
+                return complete(request as CompleteRequest);
             case Activities.list:
                 return list(request as ListRequest);
             case Activities.delete:
                 return;
             case Activities.help:
                 return;
-			case 'gm':
+            case 'gm':
                 return;
             default:
                 throw new ValidationError(`Command not recognized. Please try again.`);
@@ -46,6 +53,7 @@ const ValidationModule = {
 export default ValidationModule;
 
 const create = async (request: CreateRequest): Promise<void> => {
+    Log.debug(`Validating activity ${request.activity}`);
     BountyUtils.validateTitle(request.title);
 
     BountyUtils.validateReward(request.reward);
@@ -56,8 +64,9 @@ const create = async (request: CreateRequest): Promise<void> => {
 }
 
 const publish = async (request: PublishRequest): Promise<void> => {
-    
-    await BountyUtils.validateBountyId(request.bountyId);
+    Log.debug(`Validating activity ${request.activity}`);
+
+    BountyUtils.validateBountyId(request.bountyId);
 
     const db: Db = await MongoDbUtils.connect('bountyboard');
     const dbCollectionBounties = db.collection('bounties');
@@ -66,33 +75,116 @@ const publish = async (request: PublishRequest): Promise<void> => {
     });
 
     if (!dbBountyResult) {
-        throw new ValidationError('Please select a valid bounty id to publish. ' +
+        throw new ValidationError(
+            `Please select a valid bounty id to ${request.activity}. ` +
+            `Check your previous DMs from bountybot for the correct id.`
+        );
+    }
+
+    if (dbBountyResult.status && dbBountyResult.status !== BountyStatus.draft) {
+        throw new ValidationError(
+            `The bounty id you have selected is in status ${dbBountyResult.status}\n` +
+            `Currently, only bounties with status draft can be published to the bounty channel.\n` +
+            `Please reach out to your favorite Bounty Board representative with any questions!`
+            );
+    }
+}
+
+const claim = async (request: ClaimRequest): Promise<void> => {
+    Log.debug(`Validating activity ${request.activity}`);
+    BountyUtils.validateBountyId(request.bountyId);
+
+    const db: Db = await MongoDbUtils.connect('bountyboard');
+    const dbCollectionBounties = db.collection('bounties');
+    const dbBountyResult: BountyCollection = await dbCollectionBounties.findOne({
+        _id: new mongo.ObjectId(request.bountyId),
+    });
+
+    if (!dbBountyResult) {
+        throw new ValidationError(
+            `Please select a valid bounty id to ${request.activity}. ` +
+            `Check your previous DMs from bountybot for the correct id.`
+        );
+    }
+
+    if (dbBountyResult.status && dbBountyResult.status !== BountyStatus.open) {
+        throw new ValidationError(
+            `The bounty id you have selected is in status ${dbBountyResult.status}\n` +
+            `Currently, only bounties with status ${BountyStatus.open} can be claimed.\n` +
+            `Please reach out to your favorite Bounty Board representative with any questions!`
+            );
+    }
+}
+
+const submit = async (request: SubmitRequest): Promise<void> => {
+    Log.debug(`Validating activity ${request.activity}`);
+    BountyUtils.validateBountyId(request.bountyId);
+
+    if (request.url) {
+        BountyUtils.validateUrl(request.url);
+    }
+
+    if (request.notes) {
+        BountyUtils.validateNotes(request.notes);
+    }
+
+    const db: Db = await MongoDbUtils.connect('bountyboard');
+    const bountyCollection = db.collection('bounties');
+    const dbBountyResult: BountyCollection = await bountyCollection.findOne({
+        _id: new mongo.ObjectId(request.bountyId),
+    });
+
+    if (!dbBountyResult) {
+        throw new ValidationError(`Please select a valid bounty id to ${request.activity}. ` +
             'Check your previous DMs from bountybot for the correct id.')
     }
 
-    if (dbBountyResult.status && dbBountyResult.status !== 'Draft') {
+    if (dbBountyResult.status && dbBountyResult.status !== BountyStatus.in_progress) {
         throw new ValidationError(`The bounty id you have selected is in status ${dbBountyResult.status}\n` +
-        `Currently, only bounties with status draft can be published to the bounty channel.\n` +
-        `Please reach out to your favorite Bounty Board representative with any questions!`)
+            `Currently, only bounties with status ${BountyStatus.in_progress} can be submitted for review.\n` +
+            `Please reach out to your favorite Bounty Board representative with any questions!`)
+    }
+}
+
+const complete = async (request: CompleteRequest): Promise<void> => {
+    Log.debug(`Validating activity ${request.activity}`);
+    BountyUtils.validateBountyId(request.bountyId);
+
+    const db: Db = await MongoDbUtils.connect('bountyboard');
+    const bountyCollection = db.collection('bounties');
+    const dbBountyResult: BountyCollection = await bountyCollection.findOne({
+        _id: new mongo.ObjectId(request.bountyId),
+    });
+
+    if (!dbBountyResult) {
+        throw new ValidationError(`Please select a valid bounty id to ${request.activity}. ` +
+            'Check your previous DMs from bountybot for the correct id.')
+    }
+
+    if (dbBountyResult.status && dbBountyResult.status !== BountyStatus.in_review) {
+        throw new ValidationError(`The bounty id you have selected is in status ${dbBountyResult.status}\n` +
+            `Currently, only bounties with status ${BountyStatus.in_review} can be marked for completion.\n` +
+            `Please reach out to your favorite Bounty Board representative with any questions!`)
     }
 }
 
 const list = async (request: ListRequest): Promise<void> => {
-    switch (request.listType) { 
-    case 'CREATED_BY_ME':
-        return;
-	case 'CLAIMED_BY_ME':
-		return;
-    case 'CLAIMED_BY_ME_AND_COMPLETE':
-        return;
-	case 'DRAFTED_BY_ME':
-		return;
-	case 'OPEN':
-		return;
-	case 'IN_PROGRESS':
-		return;
-	default:
-		Log.info('invalid list-type');
-        throw new ValidationError('Please select a valid list-type from the command menu');
-	}
+    Log.debug(`Validating activity ${request.activity}`);
+    switch (request.listType) {
+        case 'CREATED_BY_ME':
+            return;
+        case 'CLAIMED_BY_ME':
+            return;
+        case 'CLAIMED_BY_ME_AND_COMPLETE':
+            return;
+        case 'DRAFTED_BY_ME':
+            return;
+        case 'OPEN':
+            return;
+        case 'IN_PROGRESS':
+            return;
+        default:
+            Log.info('invalid list-type');
+            throw new ValidationError('Please select a valid list-type from the command menu');
+    }
 }

@@ -2,6 +2,7 @@
 import { Client, Intents } from 'discord.js';
 import { SlashCreator, GatewayServer, SlashCommand, CommandContext } from 'slash-create';
 import path from 'path';
+import fs from 'fs';
 import Log from './utils/Log';
 
 new Log();
@@ -19,9 +20,31 @@ const client = new Client({
 		Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
 		Intents.FLAGS.DIRECT_MESSAGES,
 		Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
-		
+
 	],
 	partials: ['MESSAGE', 'CHANNEL', 'REACTION'],
+});
+
+const eventFiles = fs.readdirSync(path.join(__dirname, '/events')).filter(file => file.endsWith('.js'));
+eventFiles.forEach(file => {
+	const event = new (require(`./events/${file}`).default)();
+	try {
+		if (event.once) {
+			client.once(event.name, (...args) => event.execute(...args, client));
+		} else {
+			client.on(event.name, (...args) => event.execute(...args, client));
+		}
+	} catch (e) {
+		Log.error('Event failed to process', {
+			indexMeta: true,
+			meta: {
+				name: e.name,
+				message: e.message,
+				stack: e.stack,
+				event,
+			},
+		});
+	}
 });
 
 const creator = new SlashCreator({
@@ -31,13 +54,13 @@ const creator = new SlashCreator({
 });
 
 creator
-  .withServer(
-    new GatewayServer(
-      (handler) => client.ws.on('INTERACTION_CREATE', handler)
-    )
-  )
-  .registerCommandsIn(path.join(__dirname, 'commands/bounty'))
-  .syncCommands();
+	.withServer(
+		new GatewayServer(
+			(handler) => client.ws.on('INTERACTION_CREATE', handler)
+		)
+	)
+	.registerCommandsIn(path.join(__dirname, 'commands/bounty'))
+	.syncCommands();
 
 // When the client is ready, run this code (only once)
 client.once('ready', () => {

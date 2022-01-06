@@ -208,10 +208,12 @@ export default class Bounty extends SlashCommand {
     async run(commandContext: CommandContext): Promise<void> {
         // TODO: migrate to adding handlers to array
         // core-logic of any Activity:
+        // request initiator (slash command, message reaction, dm reaction callback)
         // Auth check
         // validate/sanitize user input
         // Parse user input into database/api call
-        // API response --> user success handling or user failure handling
+        // Successful db/API response --> user success handling + embed update, allow request initiator to delete original /bounty message
+        // Error db/API response --> throw error, allow request initiator to handle logging, and graceful error message to users
         Log.debug(`Slash command triggered for ${commandContext.subcommands[0]}`);
         let request: any;
         switch (commandContext.subcommands[0]) {

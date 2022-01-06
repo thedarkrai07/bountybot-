@@ -2,6 +2,8 @@ import { CommandContext } from 'slash-create'
 import { Request } from './Request'
 import { MessageReactionRequest } from '../types/discord/MessageReactionRequest';
 import { Activities } from '../constants/activities';
+import { Message } from 'discord.js';
+import DiscordUtils from '../utils/DiscordUtils';
 
 export class SubmitRequest extends Request {
     bountyId: string;
@@ -9,6 +11,7 @@ export class SubmitRequest extends Request {
     notes: string;
 
     commandContext: CommandContext;
+    message: Message;
     
     constructor(args: {
         commandContext: CommandContext, 
@@ -17,7 +20,7 @@ export class SubmitRequest extends Request {
         if (args.commandContext) {
             let commandContext: CommandContext = args.commandContext;
             if (commandContext.subcommands[0] !== Activities.publish) {
-                throw new Error('PublishRequest attempted created for non Publish activity.');
+                throw new Error('SubmitRequest attempted created for non Submit activity.');
             }
             super(commandContext.subcommands[0], commandContext.guildID, args.commandContext.user.id, args.commandContext.user.bot);
             this.bountyId = commandContext.options.submit['bounty-id'];
@@ -28,7 +31,9 @@ export class SubmitRequest extends Request {
         }
         else if (args.messageReactionRequest) {
             let messageReactionRequest: MessageReactionRequest = args.messageReactionRequest;
-            super(Activities.publish, messageReactionRequest.message.guildId, messageReactionRequest.user.id, messageReactionRequest.user.bot);
+            super(Activities.submit, messageReactionRequest.message.guildId, messageReactionRequest.user.id, messageReactionRequest.user.bot);
+            this.message = messageReactionRequest.message;
+            this.bountyId = DiscordUtils.getBountyIdFromEmbedMessage(messageReactionRequest.message);
         }
     }
 }

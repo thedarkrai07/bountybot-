@@ -25,8 +25,9 @@ export const publishBounty = async (publishRequest: PublishRequest): Promise<any
 
     await writeDbHandler(dbBountyResult, bountyMessage.id);
 
+    await guildMember.send({ content: `Bounty published to #🧀-bounty-board and the website! ${process.env.BOUNTY_BOARD_URL}${bountyId}` });
 	
-	return guildMember.send({ content: `Bounty published to #🧀-bounty-board and the website! ${process.env.BOUNTY_BOARD_URL}${bountyId}` });
+	return;
 }
 
 const getDbHandler = async (bountyId: string, guildId: string): Promise<[BountyCollection, CustomerCollection]> => {
@@ -90,7 +91,7 @@ export const generateEmbedMessage = async (dbBounty: BountyCollection, newStatus
 		},
 		description: dbBounty.description,
 		fields: [
-			{ name: 'HashId', value: dbBounty._id.toHexString(), inline: false },
+			{ name: 'Bounty Id', value: dbBounty._id.toHexString(), inline: false },
 			{ name: 'Criteria', value: dbBounty.criteria, inline: false },
 			{ name: 'Reward', value: dbBounty.reward.amount + ' ' + dbBounty.reward.currency.toUpperCase(), inline: true },
 			{ name: 'Status', value: newStatus, inline: true },

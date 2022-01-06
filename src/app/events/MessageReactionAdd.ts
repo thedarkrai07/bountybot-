@@ -62,6 +62,11 @@ export default class implements DiscordEvent {
             return;
         }
 
+        // TODO: consider whether the reaction callback on create is really needed, given this code path gets triggered as well
+        if (reaction.emoji.name === '👍') {
+            return;
+        }
+
         const bountyId: string = DiscordUtils.getBountyIdFromEmbedMessage(message);
         let request: any;
 
@@ -124,8 +129,10 @@ export default class implements DiscordEvent {
         }
         catch (e) {
             if (e instanceof ValidationError) {
+                Log.info(`<@${user.id} submitted a request that failed validation`);
                 return user.send(`<@${user.id}>\n` + e.message);
             } else if (e instanceof AuthorizationError) {
+                Log.info(`<@${user.id} submitted a request that failed authorization`);
                 return user.send(`<@${user.id}>\n` + e.message);
             }
             else {

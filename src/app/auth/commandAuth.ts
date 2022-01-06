@@ -9,10 +9,14 @@ import { Activities } from '../constants/activities';
 import { PublishRequest } from '../requests/PublishRequest';
 import { CreateRequest } from '../requests/CreateRequest';
 import Log from '../utils/Log';
+import { SubmitRequest } from '../requests/SubmitRequest';
+import { ClaimRequest } from '../requests/ClaimRequest';
+import { CompleteRequest } from '../requests/CompleteRequest';
+import { Request } from '../requests/Request';
 
 const AuthorizationModule = {
     /**
-     * Routes requests to the correct authorization functions.
+     * Routes requests to the correct authorization checks.
      * Note: Authentication is handled natively by discord.
      * @param request 
      * @returns an empty Promise for upstream error handling and async calls
@@ -20,23 +24,21 @@ const AuthorizationModule = {
      */
     async run(request: any): Promise<void> {
         Log.debug('Reached Authorization Handler')
-        // TODO: how to type check request.bot?
-        if (request.bot) {
+        if ((request as Request).bot) {
             throw new AuthorizationError('Bots are unauthorized to work directly with bounties.')
         };
 
-        // TODO: how to type check request.activity?
-        switch (request.activity) {
+        switch ((request as Request).activity) {
             case Activities.create:
                 return create(request as CreateRequest);
             case Activities.publish:
                 return publish(request as PublishRequest);
             case Activities.claim:
-                return;
+                return claim(request as ClaimRequest);
             case Activities.submit:
-                return;
+                return submit(request as SubmitRequest);
             case Activities.complete:
-                return;
+                return complete(request as CompleteRequest);
             case Activities.list:
                 return;
             case Activities.delete:
@@ -68,15 +70,17 @@ const create = async (request: CreateRequest): Promise<void> => {
 
 const publish = async (request: PublishRequest): Promise<void> => {
     const db: Db = await MongoDbUtils.connect('bountyboard');
-    const dbCollectionBounties = db.collection('bounties');
-    const dbBountyResult: BountyCollection = await dbCollectionBounties.findOne({
+    const bountyCollection = db.collection('bounties');
+    const dbBountyResult: BountyCollection = await bountyCollection.findOne({
         _id: new mongo.ObjectId(request.bountyId),
     });
 
     if (request.userId !== dbBountyResult.createdBy.discordId) {
-        throw new AuthorizationError(`Thank you for giving bounty commands a try!\n` +
-        `It looks like you don't have permission to publish this bounty.\n` +
-        `If you think this is an error, please reach out to a server admin for help.`);
+        throw new AuthorizationError(
+            `Thank you for giving bounty commands a try!\n` +
+            `It looks like you don't have permission to ${request.activity} this bounty.\n` +
+            `If you think this is an error, please reach out to a server admin for help.`
+            );
     }
 }
 
@@ -84,5 +88,56 @@ const publish = async (request: PublishRequest): Promise<void> => {
 /**
  * The creator of this bounty gated it to specific role holders. Check the "gated to" section to see which role you would need to claim it.
  */
+ const claim = async (request: ClaimRequest): Promise<void> => {
+    const db: Db = await MongoDbUtils.connect('bountyboard');
+    const bountyCollection = db.collection('bounties');
+    const dbBountyResult: BountyCollection = await bountyCollection.findOne({
+        _id: new mongo.ObjectId(request.bountyId),
+    });
+
+    if (dbBountyResult.gate && request.userId !== dbBountyResult.gate[0]) {
+        throw new AuthorizationError(
+            `Thank you for giving bounty commands a try!\n` +
+            `It looks like you don't have permission to ${request.activity} this bounty.\n` +
+            `The creator of this bounty gated it to specific role holders. Check the "gated to" value of the bounty to see which role you would need to claim it.`
+        );
+    }
+ }
+
+const submit = async (request: SubmitRequest): Promise<void> => {
+    const db: Db = await MongoDbUtils.connect('bountyboard');
+    const bountyCollection = db.collection('bounties');
+    const dbBountyResult: BountyCollection = await bountyCollection.findOne({
+        _id: new mongo.ObjectId(request.bountyId),
+    });
+
+    if (request.userId !== dbBountyResult.claimedBy.discordId) {
+        throw new AuthorizationError(
+            `Thank you for giving bounty commands a try!\n` +
+            `It looks like you don't have permission to ${request.activity} this bounty.\n` +
+            `This bounty has already been claimed by ${dbBountyResult.claimedBy.discordHandle}. ` +
+            `At this time, you can only submit bounties that you have previously claimed.\n` +
+            `Please reach out to your favorite bounty board representative with any questions!` 
+            );
+    }
+}
+
+const complete = async (request: CompleteRequest): Promise<void> => {
+    const db: Db = await MongoDbUtils.connect('bountyboard');
+    const bountyCollection = db.collection('bounties');
+    const dbBountyResult: BountyCollection = await bountyCollection.findOne({
+        _id: new mongo.ObjectId(request.bountyId),
+    });
+
+    if (request.userId !== dbBountyResult.createdBy.discordId) {
+        throw new AuthorizationError(
+            `Thank you for giving bounty commands a try!\n` +
+            `It looks like you don't have permission to ${request.activity} this bounty.\n` +
+            `This bounty can only be completed by ${dbBountyResult.createdBy.discordHandle}. ` +
+            `At this time, you can only complete bounties that you have created.\n` +
+            `Please reach out to your favorite bounty board representative with any questions!` 
+            );
+    }
+}
 
 export default AuthorizationModule;
