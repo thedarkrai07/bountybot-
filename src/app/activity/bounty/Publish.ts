@@ -43,7 +43,6 @@ const getDbHandler = async (bountyId: string, guildId: string): Promise<[BountyC
 		status: 'Draft',
 	});
 
-    Log.debug(`Found: /n${JSON.stringify(dbBountyResult)}/n${JSON.stringify(dbCustomerResult)}`);
     return [dbBountyResult, dbCustomerResult];
 
 }

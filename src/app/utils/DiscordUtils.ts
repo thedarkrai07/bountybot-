@@ -23,6 +23,7 @@ const DiscordUtils = {
         };
     },
 
+    // TODO: graceful timeout handling needed
     async awaitUserDM(dmChannel: DMChannel, replyOptions: AwaitMessagesOptions): Promise<string> {
 		const message = (await dmChannel.awaitMessages(replyOptions)).first();
 		const messageText = message.content;

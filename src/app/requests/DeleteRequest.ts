@@ -20,7 +20,7 @@ export class DeleteRequest extends Request {
     }) {
         if (args.commandContext) {
             let commandContext: CommandContext = args.commandContext;
-            if (commandContext.subcommands[0] !== Activities.publish) {
+            if (commandContext.subcommands[0] !== Activities.delete) {
                 throw new Error('PublishRequest attempted created for non Publish activity.');
             }
             super(commandContext.subcommands[0], commandContext.guildID, commandContext.user.id, commandContext.user.bot);

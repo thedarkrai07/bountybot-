@@ -15,6 +15,7 @@ import DiscordUtils from '../utils/DiscordUtils';
 import { CustomerCollection } from '../types/bounty/CustomerCollection';
 import { ClaimRequest } from '../requests/ClaimRequest';
 import { CompleteRequest } from '../requests/CompleteRequest';
+import { HelpRequest } from '../requests/HelpRequest';
 
 
 const ValidationModule = {
@@ -41,7 +42,7 @@ const ValidationModule = {
             case Activities.delete:
                 return;
             case Activities.help:
-                return;
+                return help(request as HelpRequest);
             case 'gm':
                 return;
             default:
@@ -186,5 +187,21 @@ const list = async (request: ListRequest): Promise<void> => {
         default:
             Log.info('invalid list-type');
             throw new ValidationError('Please select a valid list-type from the command menu');
+    }
+}
+
+const help = async (request: HelpRequest): Promise<void> => {
+    Log.debug(`Validating activity ${request.activity}`);
+    BountyUtils.validateBountyId(request.bountyId);
+
+    const db: Db = await MongoDbUtils.connect('bountyboard');
+    const bountyCollection = db.collection('bounties');
+    const dbBountyResult: BountyCollection = await bountyCollection.findOne({
+        _id: new mongo.ObjectId(request.bountyId),
+    });
+
+    if (!dbBountyResult) {
+        throw new ValidationError(`Please select a valid bounty id to request ${request.activity}. ` +
+            'Check your previous DMs from bountybot for the correct id.')
     }
 }

@@ -19,7 +19,7 @@ export class SubmitRequest extends Request {
     }) {
         if (args.commandContext) {
             let commandContext: CommandContext = args.commandContext;
-            if (commandContext.subcommands[0] !== Activities.publish) {
+            if (commandContext.subcommands[0] !== Activities.submit) {
                 throw new Error('SubmitRequest attempted created for non Submit activity.');
             }
             super(commandContext.subcommands[0], commandContext.guildID, args.commandContext.user.id, args.commandContext.user.bot);

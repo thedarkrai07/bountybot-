@@ -13,6 +13,8 @@ import { SubmitRequest } from '../requests/SubmitRequest';
 import { ClaimRequest } from '../requests/ClaimRequest';
 import { CompleteRequest } from '../requests/CompleteRequest';
 import { Request } from '../requests/Request';
+import { BountyStatus } from '../constants/bountyStatus';
+import { HelpRequest } from '../requests/HelpRequest';
 
 const AuthorizationModule = {
     /**
@@ -44,7 +46,7 @@ const AuthorizationModule = {
             case Activities.delete:
                 return;
             case Activities.help:
-                return;
+                return help(request as HelpRequest);
 			case 'gm':
                 return;
         }
@@ -135,6 +137,22 @@ const complete = async (request: CompleteRequest): Promise<void> => {
             `It looks like you don't have permission to ${request.activity} this bounty.\n` +
             `This bounty can only be completed by ${dbBountyResult.createdBy.discordHandle}. ` +
             `At this time, you can only complete bounties that you have created.\n` +
+            `Please reach out to your favorite bounty board representative with any questions!` 
+            );
+    }
+}
+
+const help = async (request: HelpRequest): Promise<void> => {
+    const db: Db = await MongoDbUtils.connect('bountyboard');
+    const bountyCollection = db.collection('bounties');
+    const dbBountyResult: BountyCollection = await bountyCollection.findOne({
+        _id: new mongo.ObjectId(request.bountyId),
+    });
+
+    if (dbBountyResult.status !== BountyStatus.open || request.userId !== dbBountyResult.claimedBy.discordId) {
+        throw new AuthorizationError(
+            `Thank you for giving bounty commands a try!\n` +
+            `It looks like you don't have permission to request ${request.activity} for this bounty.\n` +
             `Please reach out to your favorite bounty board representative with any questions!` 
             );
     }

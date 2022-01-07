@@ -58,10 +58,11 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
 
     let convertedDueDateFromMessage: Date;
     do {
-        await guildMember.send({ content: 'Please enter `UTC` date in format `yyyy-mm-dd`, i.e 2021-08-15`? (no for a default value of 3 months from today)' });
+        // TODO: update default date to a reaction instead of text input
+        await guildMember.send({ content: 'Please enter `UTC` date in format `yyyy-mm-dd`, i.e 2022-01-01`? (type \'no\' or \'skip\' for a default value of 3 months from today)' });
         const dueAtMessageText = await DiscordUtils.awaitUserDM(dmChannel, replyOptions);
 
-        if (dueAtMessageText.toLowerCase() !== 'no') {
+        if (dueAtMessageText.toLowerCase() !== 'no' || dueAtMessageText.toLowerCase() !== 'skip') {
             try {
                 convertedDueDateFromMessage = BountyUtils.validateDate(dueAtMessageText);
             } catch (e) {

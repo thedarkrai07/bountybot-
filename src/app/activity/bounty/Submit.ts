@@ -8,6 +8,7 @@ import { BountyCollection } from '../../types/bounty/BountyCollection';
 import { CustomerCollection } from '../../types/bounty/CustomerCollection';
 import RuntimeError from '../../errors/RuntimeError';
 import { BountyStatus } from '../../constants/bountyStatus';
+import { BountyEmbedFields } from '../../constants/embeds';
 
 
 export const submitBounty = async (request: SubmitRequest): Promise<void> => {
@@ -42,8 +43,7 @@ export const submitBounty = async (request: SubmitRequest): Promise<void> => {
 		creatorSubmitDM += `\nPlease review these notes:\n${request.notes}`
 	}
 	await createdByUser.send({ content: creatorSubmitDM });
-
-	await submittedByUser.send({ content: `Bounty in review! Expect a message from <@${getDbResult.dbBountyResult.createdBy.discordId}>` });
+	await submittedByUser.send({ content: `Bounty in review! Expect a message from <@${createdByUser.id}>` });
     return;
 }
 
@@ -124,10 +124,10 @@ export const submitBountyMessage = async (message: Message, submittedByUser: Gui
 	Log.debug('fetching bounty message for submit')
 
 	const embedMessage: MessageEmbed = message.embeds[0];
-	embedMessage.fields[3].value = 'In-Review';
+	embedMessage.fields[BountyEmbedFields.status].value = BountyStatus.in_review;
 	embedMessage.setColor('#d39e00');
 	embedMessage.addField('Submitted by', submittedByUser.user.tag, true);
-	embedMessage.setFooter('✅ - complete | 🆘 - help');
+	embedMessage.setFooter('✅ - complete |  🆘 - help');
 	await message.edit({ embeds: [embedMessage] });
 	await addSubmitReactions(message);
 };
