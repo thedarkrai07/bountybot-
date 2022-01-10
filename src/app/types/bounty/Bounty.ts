@@ -1,4 +1,4 @@
-import { Int32, ObjectId } from 'mongodb';
+import { Double, Int32, ObjectId } from 'mongodb';
 
 export interface Bounty {
 	_id?: ObjectId,
@@ -29,7 +29,7 @@ export type UserObject = {
 
 export type Reward = {
 	currency: string,
-	amount: Int32,
+	amount: Double,
 	scale: Int32,
 	amountWithoutScale: Int32,
 };

@@ -28,5 +28,10 @@
   "devDependencies": {
     "@typescript-eslint/parser": "^5.7.0",
     "eslint": "^8.5.0"
-  }
+  },
+  "engines": {
+    "yarn": "1.x",
+    "node": ">=16.10.0"
+},
+"engineStrict": true
 }

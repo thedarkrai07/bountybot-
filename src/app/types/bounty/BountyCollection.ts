@@ -1,4 +1,4 @@
-import { Collection, Int32, ObjectId } from 'mongodb';
+import { Collection, Double, Int32, ObjectId } from 'mongodb';
 
 export interface BountyCollection extends Collection {
 	_id: ObjectId,
@@ -29,7 +29,7 @@ export type UserObject = {
 
 export type Reward = {
 	currency: string,
-	amount: Int32,
+	amount: Double,
 	scale: Int32,
 };
 
