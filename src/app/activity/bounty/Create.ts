@@ -60,6 +60,7 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
     let convertedDueDateFromMessage: Date;
     do {
         // TODO: update default date to a reaction instead of text input
+        // TODO: update hardcoded no/skip to a REGEX
         await guildMember.send({ content: 'Please enter `UTC` date in format `yyyy-mm-dd`, i.e 2022-01-01`? (type \'no\' or \'skip\' for a default value of 3 months from today)' });
         const dueAtMessageText = await DiscordUtils.awaitUserDM(dmChannel, replyOptions);
 
@@ -70,7 +71,7 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
                 Log.warn('user entered invalid date for bounty');
                 await guildMember.send({ content: 'Please try `UTC` date in format `yyyy-mm-dd`, i.e 2021-08-15' });
             }
-        } else if (dueAtMessageText.toLowerCase() === 'no') {
+        } else if (dueAtMessageText.toLowerCase() === 'no' || dueAtMessageText.toLowerCase() === 'skip') {
             convertedDueDateFromMessage = null;
             break;
         }
@@ -137,7 +138,7 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
     //await message.react('📝');
     await message.react('❌');
 
-    return handleBountyReaction(message, guildMember, guildId, listOfBountyIds, createRequest);
+    return await handleBountyReaction(message, guildMember, guildId, listOfBountyIds);
 }
 
 const createDbHandler = async (
@@ -223,7 +224,9 @@ export const generateBountyRecord = (
     return bountyRecord;
 };
 
-const handleBountyReaction = (message: Message, guildMember: GuildMember, guildID: string, bountyIds: string[], createRequest: CreateRequest): Promise<any> => {
+// TO-DO: consider whether this awkward callback is needed.
+// The message reaction triggers the MessageReactionAdd event anyways.
+const handleBountyReaction = (message: Message, guildMember: GuildMember, guildID: string, bountyIds: string[]): Promise<any> => {
     return message.awaitReactions({
         max: 1,
         time: (6000 * 60),
@@ -251,7 +254,7 @@ const handleBountyReaction = (message: Message, guildMember: GuildMember, guildI
                     }
                 }));
             }
-            return;
+            return ;
         } else if (reaction.emoji.name === '❌') {
             // TODO: should this go through the handler chain?
             Log.info('/bounty create new | delete given');
