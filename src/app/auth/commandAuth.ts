@@ -168,7 +168,7 @@ const help = async (request: HelpRequest): Promise<void> => {
         _id: new mongo.ObjectId(request.bountyId),
     });
 
-    if (dbBountyResult.status !== BountyStatus.open || request.userId !== dbBountyResult.claimedBy.discordId) {
+    if (! (dbBountyResult.status === BountyStatus.open || request.userId === dbBountyResult.claimedBy.discordId)) {
         throw new AuthorizationError(
             `Thank you for giving bounty commands a try!\n` +
             `It looks like you don't have permission to request ${request.activity} for this bounty.\n` +

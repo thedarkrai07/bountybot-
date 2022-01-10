@@ -13,7 +13,7 @@ import { BountyEmbedFields } from '../../constants/embeds';
 
 export const helpBounty = async (request: HelpRequest): Promise<void> => {
     const helpRequestedUser = await DiscordUtils.getGuildMemberFromUserId(request.userId, request.guildId);
-	Log.info(`${request.bountyId} bounty completed by ${helpRequestedUser.user.tag}`);
+	Log.info(`${request.bountyId} bounty requested help by ${helpRequestedUser.user.tag}`);
 
     const getDbResult: {dbBountyResult: BountyCollection, bountyChannel: string} = await getDbHandler(request);
     const bountyCreator: GuildMember = await DiscordUtils.getGuildMemberFromUserId(getDbResult.dbBountyResult.createdBy.discordId, request.guildId)
