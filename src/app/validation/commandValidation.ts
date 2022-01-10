@@ -16,6 +16,7 @@ import { CustomerCollection } from '../types/bounty/CustomerCollection';
 import { ClaimRequest } from '../requests/ClaimRequest';
 import { CompleteRequest } from '../requests/CompleteRequest';
 import { HelpRequest } from '../requests/HelpRequest';
+import { DeleteRequest } from '../requests/DeleteRequest';
 
 
 const ValidationModule = {
@@ -40,7 +41,7 @@ const ValidationModule = {
             case Activities.list:
                 return list(request as ListRequest);
             case Activities.delete:
-                return;
+                return deleteValidation(request as DeleteRequest);
             case Activities.help:
                 return help(request as HelpRequest);
             case 'gm':
@@ -187,6 +188,41 @@ const list = async (request: ListRequest): Promise<void> => {
         default:
             Log.info('invalid list-type');
             throw new ValidationError('Please select a valid list-type from the command menu');
+    }
+}
+
+const deleteValidation = async (request: DeleteRequest): Promise<void> => {
+    Log.debug(`Validating activity ${request.activity}`);
+    BountyUtils.validateBountyId(request.bountyId);
+
+    const db: Db = await MongoDbUtils.connect('bountyboard');
+    const dbCollectionBounties = db.collection('bounties');
+    const dbBountyResult: BountyCollection = await dbCollectionBounties.findOne({
+        _id: new mongo.ObjectId(request.bountyId),
+    });
+
+    if (!dbBountyResult) {
+        throw new ValidationError(
+            `Please select a valid bounty id to ${request.activity}. ` +
+            `Check your previous DMs from bountybot for the correct id.`
+        );
+    }
+
+    const currentDate: string = (new Date()).toISOString();
+
+    const invalidBountyStatus = 
+        dbBountyResult.status && 
+        !(dbBountyResult.status === BountyStatus.draft ||
+        dbBountyResult.status === BountyStatus.open ||
+            (dbBountyResult.status === BountyStatus.in_progress && 
+                !BountyUtils.isWithin24Hours(currentDate, BountyUtils.getClaimedAt(dbBountyResult))));
+
+    if (invalidBountyStatus) {
+        throw new ValidationError(
+            `The bounty id you have selected is in status ${dbBountyResult.status}\n` +
+            `Currently, only bounties with status ${BountyStatus.draft} and ${BountyStatus.open} can be deleted.\n` +
+            `Please reach out to your favorite Bounty Board representative with any questions!`
+            );
     }
 }
 

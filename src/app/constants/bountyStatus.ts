@@ -4,4 +4,5 @@ export class BountyStatus {
     static in_progress = 'In-Progress';
     static in_review = 'In-Review';
     static complete = 'Completed';
+    static deleted = 'Deleted';
 }

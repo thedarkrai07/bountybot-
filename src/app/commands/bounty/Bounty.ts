@@ -297,7 +297,7 @@ export default class Bounty extends SlashCommand {
             }
         }
 
-        return commandContext.initiallyResponded ? null: await commandContext.delete();
+        return await commandContext.delete();
 
     }
 }

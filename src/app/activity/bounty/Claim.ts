@@ -86,11 +86,11 @@ const writeDbHandler = async (request: ClaimRequest, claimedByUser: GuildMember)
 				iconUrl: claimedByUser.user.avatarURL(),
 			},
 			claimedAt: currentDate,
-			status: 'In-Progress',
+			status: BountyStatus.in_progress,
 		},
 		$push: {
 			statusHistory: {
-				status: 'In-Progress',
+				status: BountyStatus.in_progress,
 				setAt: currentDate,
 			},
 		},

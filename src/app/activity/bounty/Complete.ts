@@ -102,6 +102,8 @@ const writeDbHandler = async (request: CompleteRequest, completedByUser: GuildMe
 				discordId: completedByUser.user.id,
 				iconUrl: completedByUser.user.avatarURL(),
 			},
+            // TO-DO: What is the point of status history if we publish createdAt, claimedAt... as first class fields?
+            // note that createdAt, claimedAt are not part of the BountyCollection type
 			reviewedAt: currentDate,
 			status: BountyStatus.complete,
 		},

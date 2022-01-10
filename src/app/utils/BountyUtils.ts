@@ -2,7 +2,10 @@ import ValidationError from '../errors/ValidationError';
 import Log, { LogUtils } from './Log';
 import DiscordUtils from '../utils/DiscordUtils';
 import { URL } from 'url';
+import { BountyCollection } from '../types/bounty/BountyCollection';
+import { BountyStatus } from '../constants/bountyStatus';
 const BountyUtils = {
+    TWENTYFOUR_HOURS_IN_SECONDS: 24*60*60,
 
     validateDescription(description: string): void {
         const CREATE_SUMMARY_REGEX = /^[\w\s\W]{1,4000}$/;
@@ -144,6 +147,32 @@ const BountyUtils = {
                 //'Providing notes is not required, but it makes it easier for your work to be reviewed and for your bounty to be paid out.\n'
             );
         }
+    },
+
+    getClaimedAt(bountyRecord: BountyCollection): string | null {
+        const statusHistory = bountyRecord.statusHistory;
+        if (!statusHistory) {
+            return null;
+        }
+
+        for (const statusRecord of statusHistory) {
+            if (statusRecord.status === BountyStatus.in_progress) {
+                return statusRecord.setAt;
+            }
+        }
+        return null;
+    },
+
+    /**
+     * compares whether two Dates are within 24 hours of each other
+     * @param one ISO-8601 representation of a date
+     * @param two ISO-8601 representation of a date
+     */
+    isWithin24Hours(one: string, two: string): boolean {
+        const dateOne: Date = new Date(one);
+        const dateTwo: Date = new Date(two);
+        let elapsedSeconds = Math.abs( ( dateOne.getTime() - dateTwo.getTime() ) / 1000 );
+        return elapsedSeconds < BountyUtils.TWENTYFOUR_HOURS_IN_SECONDS;
     }
 
 }

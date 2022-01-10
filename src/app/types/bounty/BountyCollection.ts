@@ -15,7 +15,7 @@ export interface BountyCollection extends Collection {
 	dueAt: string,
 	status: string,
 	//TODO: update to Status[]
-	statusHistory: string[],
+	statusHistory: Status[],
 	discordMessageId: string,
 	customerId: string,
 	gate: string[],

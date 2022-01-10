@@ -8,6 +8,7 @@ import { CustomerCollection } from '../../types/bounty/CustomerCollection';
 import DiscordUtils from '../../utils/DiscordUtils';
 import BountyUtils from '../../utils/BountyUtils';
 import { PublishRequest } from '../../requests/PublishRequest';
+import { BountyStatus } from '../../constants/bountyStatus';
 
 export const publishBounty = async (publishRequest: PublishRequest): Promise<any> => {
     Log.info(`starting to finalize bounty: ${publishRequest.bountyId} from guild: ${publishRequest.guildId}`);
@@ -53,12 +54,12 @@ const writeDbHandler = async (dbBountyResult: BountyCollection, bountyMessageId:
     const currentDate = (new Date()).toISOString();
 	const writeResult: UpdateWriteOpResult = await dbCollectionBounties.updateOne(dbBountyResult, {
 		$set: {
-			status: 'Open',
+			status: BountyStatus.open,
 			discordMessageId: bountyMessageId,
 		},
 		$push: {
 			statusHistory: {
-				status: 'Open',
+				status: BountyStatus.open,
 				setAt: currentDate,
 			},
 		},

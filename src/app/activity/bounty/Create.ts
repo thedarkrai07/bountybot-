@@ -13,6 +13,7 @@ import { deleteBounty } from './Delete';
 import { PublishRequest } from '../../requests/PublishRequest';
 import { DeleteRequest } from '../../requests/DeleteRequest';
 import { Activities } from '../../constants/activities';
+import { BountyStatus } from '../../constants/bountyStatus';
 
 export const createBounty = async (createRequest: CreateRequest): Promise<any> => {
     const guildAndMember = await DiscordUtils.getGuildAndMember(createRequest.guildId, createRequest.userId);
@@ -207,11 +208,11 @@ export const generateBountyRecord = (
         createdAt: currentDate,
         statusHistory: [
             {
-                status: 'Draft',
+                status: BountyStatus.draft,
                 setAt: currentDate,
             },
         ],
-        status: 'Draft',
+        status: BountyStatus.draft,
         dueAt: dueAt.toISOString(),
     };
 

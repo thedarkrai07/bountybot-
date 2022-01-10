@@ -1,11 +1,8 @@
 import { Message, MessageReaction, PartialUser, User } from 'discord.js';
 import Log, { LogUtils } from '../utils/Log';
 import ValidationError from '../errors/ValidationError';
-import MongoDbUtils from '../utils/MongoDbUtils';
 import DiscordUtils from '../utils/DiscordUtils';
-import { Db } from 'mongodb';
 import { DiscordEvent } from '../types/discord/DiscordEvent';
-import { CustomerCollection } from '../types/bounty/CustomerCollection';
 import { DeleteRequest } from '../requests/DeleteRequest';
 import { SubmitRequest } from '../requests/SubmitRequest';
 import { CompleteRequest } from '../requests/CompleteRequest';
@@ -129,10 +126,11 @@ export default class implements DiscordEvent {
         }
         catch (e) {
             if (e instanceof ValidationError) {
-                Log.info(`<@${user.id} submitted a request that failed validation`);
+                // TO-DO: Consider adding a User (tag, id) metadata field to logging objects
+                Log.info(`${user.tag} submitted a request that failed validation`);
                 return user.send(`<@${user.id}>\n` + e.message);
             } else if (e instanceof AuthorizationError) {
-                Log.info(`<@${user.id} submitted a request that failed authorization`);
+                Log.info(`${user.tag} submitted a request that failed authorization`);
                 return user.send(`<@${user.id}>\n` + e.message);
             }
             else {

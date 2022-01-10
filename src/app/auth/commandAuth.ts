@@ -15,6 +15,7 @@ import { CompleteRequest } from '../requests/CompleteRequest';
 import { Request } from '../requests/Request';
 import { BountyStatus } from '../constants/bountyStatus';
 import { HelpRequest } from '../requests/HelpRequest';
+import { DeleteRequest } from '../requests/DeleteRequest';
 
 const AuthorizationModule = {
     /**
@@ -44,7 +45,7 @@ const AuthorizationModule = {
             case Activities.list:
                 return;
             case Activities.delete:
-                return;
+                return deleteAuthorization(request as DeleteRequest);
             case Activities.help:
                 return help(request as HelpRequest);
 			case 'gm':
@@ -117,7 +118,7 @@ const submit = async (request: SubmitRequest): Promise<void> => {
         throw new AuthorizationError(
             `Thank you for giving bounty commands a try!\n` +
             `It looks like you don't have permission to ${request.activity} this bounty.\n` +
-            `This bounty has already been claimed by ${dbBountyResult.claimedBy.discordHandle}. ` +
+            `This bounty has already been claimed by <@${dbBountyResult.claimedBy.discordId}>  (${dbBountyResult.claimedBy.discordHandle}). ` +
             `At this time, you can only submit bounties that you have previously claimed.\n` +
             `Please reach out to your favorite bounty board representative with any questions!` 
             );
@@ -135,8 +136,26 @@ const complete = async (request: CompleteRequest): Promise<void> => {
         throw new AuthorizationError(
             `Thank you for giving bounty commands a try!\n` +
             `It looks like you don't have permission to ${request.activity} this bounty.\n` +
-            `This bounty can only be completed by ${dbBountyResult.createdBy.discordHandle}. ` +
+            `This bounty can only be completed by <@${dbBountyResult.createdBy.discordId}>  (${dbBountyResult.createdBy.discordHandle}). ` +
             `At this time, you can only complete bounties that you have created.\n` +
+            `Please reach out to your favorite bounty board representative with any questions!` 
+            );
+    }
+}
+
+const deleteAuthorization = async (request: DeleteRequest): Promise<void> => {
+    const db: Db = await MongoDbUtils.connect('bountyboard');
+    const bountyCollection = db.collection('bounties');
+    const dbBountyResult: BountyCollection = await bountyCollection.findOne({
+        _id: new mongo.ObjectId(request.bountyId),
+    });
+
+    if (request.userId !== dbBountyResult.createdBy.discordId) {
+        throw new AuthorizationError(
+            `Thank you for giving bounty commands a try!\n` +
+            `It looks like you don't have permission to ${request.activity} this bounty.\n` +
+            `This bounty can only be deleted by <@${dbBountyResult.createdBy.discordId}> (${dbBountyResult.createdBy.discordHandle}). ` +
+            `At this time, you can only delete bounties that you have created.\n` +
             `Please reach out to your favorite bounty board representative with any questions!` 
             );
     }
