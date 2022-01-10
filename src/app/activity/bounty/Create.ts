@@ -6,7 +6,6 @@ import BountyUtils from '../../utils/BountyUtils';
 import MongoDbUtils from '../../utils/MongoDbUtils';
 import { Db, InsertWriteOpResult, Double, Int32 } from 'mongodb'
 import ValidationError from '../../errors/ValidationError';
-import { BountyEmbedFields } from '../../constants/embeds';
 import { CreateRequest } from '../../requests/CreateRequest';
 import { publishBounty } from './Publish';
 import { deleteBounty } from './Delete';
@@ -197,7 +196,7 @@ export const generateBountyRecord = (
         criteria: criteria,
         reward: {
             currency: symbol.toUpperCase(),
-            amount: new Double(reward),
+            amount: new Double(parseFloat(reward)),
             scale: new Int32(scale),
             amountWithoutScale: new Int32(reward.replace('.', ''))
         },
