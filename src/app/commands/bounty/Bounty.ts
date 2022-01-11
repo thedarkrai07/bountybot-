@@ -70,7 +70,7 @@ export default class Bounty extends SlashCommand {
                         {
                             name: 'bounty-id',
                             type: CommandOptionType.STRING,
-                            description: 'Bounty hash ID',
+                            description: 'Bounty ID',
                             required: true,
                         },
                     ],
@@ -83,7 +83,7 @@ export default class Bounty extends SlashCommand {
                         {
                             name: 'bounty-id',
                             type: CommandOptionType.STRING,
-                            description: 'Hash ID of the bounty',
+                            description: 'Bounty ID',
                             required: true,
                         },
                     ],
@@ -96,7 +96,7 @@ export default class Bounty extends SlashCommand {
                         {
                             name: 'bounty-id',
                             type: CommandOptionType.STRING,
-                            description: 'Hash ID of the bounty',
+                            description: 'Bounty ID',
                             required: true,
                         },
                         {
@@ -121,7 +121,7 @@ export default class Bounty extends SlashCommand {
                         {
                             name: 'bounty-id',
                             type: CommandOptionType.STRING,
-                            description: 'Hash ID of the bounty',
+                            description: 'Bounty ID',
                             required: true,
                         },
                     ],
@@ -173,7 +173,7 @@ export default class Bounty extends SlashCommand {
                         {
                             name: 'bounty-id',
                             type: CommandOptionType.STRING,
-                            description: 'Hash ID of the bounty',
+                            description: 'Bounty ID',
                             required: true,
                         },
                     ],

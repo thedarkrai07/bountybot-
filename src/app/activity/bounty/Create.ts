@@ -63,14 +63,14 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
         await guildMember.send({ content: 'Please enter `UTC` date in format `yyyy-mm-dd`, i.e 2022-01-01`? (type \'no\' or \'skip\' for a default value of 3 months from today)' });
         const dueAtMessageText = await DiscordUtils.awaitUserDM(dmChannel, replyOptions);
 
-        if (dueAtMessageText.toLowerCase() !== 'no' || dueAtMessageText.toLowerCase() !== 'skip') {
+        if (! (dueAtMessageText.toLowerCase() === 'no' || dueAtMessageText.toLowerCase() === 'skip') ) {
             try {
                 convertedDueDateFromMessage = BountyUtils.validateDate(dueAtMessageText);
             } catch (e) {
                 Log.warn('user entered invalid date for bounty');
                 await guildMember.send({ content: 'Please try `UTC` date in format `yyyy-mm-dd`, i.e 2021-08-15' });
             }
-        } else if (dueAtMessageText.toLowerCase() === 'no' || dueAtMessageText.toLowerCase() === 'skip') {
+        } else if (dueAtMessageText === 'no' || dueAtMessageText === 'skip') {
             convertedDueDateFromMessage = null;
             break;
         }

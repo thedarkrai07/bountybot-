@@ -73,7 +73,7 @@ export const generateListEmbedMessage = async (dbBounty: Bounty, newStatus: stri
 		},
 		description: dbBounty.description,
 		fields: [
-			{ name: 'HashId', value: dbBounty._id.toHexString(), inline: false },
+			{ name: 'Bounty Id', value: dbBounty._id.toHexString(), inline: false },
 			{ name: 'Criteria', value: dbBounty.criteria, inline: false },
 			{ name: 'Reward', value: dbBounty.reward.amount + ' ' + dbBounty.reward.currency.toUpperCase(), inline: true },
 			{ name: 'Status', value: newStatus, inline: true },
