@@ -21,7 +21,7 @@ import { HelpRequest } from '../../requests/HelpRequest';
 import { GmRequest } from '../../requests/GmRequest';
 import AuthorizationError from '../../errors/AuthorizationError';
 import DiscordUtils from '../../utils/DiscordUtils';
-import { guildIds } from '../../constants/customer';
+import { guildIds } from '../../constants/customerIds';
 
 
 export default class Bounty extends SlashCommand {
