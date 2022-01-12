@@ -21,6 +21,7 @@ import { HelpRequest } from '../../requests/HelpRequest';
 import { GmRequest } from '../../requests/GmRequest';
 import AuthorizationError from '../../errors/AuthorizationError';
 import DiscordUtils from '../../utils/DiscordUtils';
+import { guildIds } from '../../constants/customer';
 
 
 export default class Bounty extends SlashCommand {
@@ -29,7 +30,7 @@ export default class Bounty extends SlashCommand {
             name: 'bounty',
             description: 'List, create, claim, delete, and mark bounties complete',
             //TODO: make this dynamic? - can pull guildId list by querying mongo from app.ts on startup
-            guildIDs: ['905250069463326740'],
+            guildIDs: guildIds,
             options: [
                 {
                     name: Activities.create,
