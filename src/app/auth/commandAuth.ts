@@ -62,9 +62,7 @@ const create = async (request: CreateRequest): Promise<void> => {
 		customerId: request.guildId
 	});
 
-    const guildMember: GuildMember = await DiscordUtils.getGuildMemberFromUserId(request.userId, request.guildId);
-
-    if (!DiscordUtils.isAllowListedRole(guildMember, dbCustomerResult.allowlistedRoles)) {
+    if (! (await DiscordUtils.hasAllowListedRole(request.userId, request.guildId, dbCustomerResult.allowlistedRoles))) {
         throw new AuthorizationError(`Thank you for giving bounty commands a try!\n` +
                                 `It looks like you don't have permission to use this command.\n` +
                                 `If you think this is an error, please reach out to a server admin for help.`);
@@ -87,10 +85,6 @@ const publish = async (request: PublishRequest): Promise<void> => {
     }
 }
 
-// TODO: for claim, use:
-/**
- * The creator of this bounty gated it to specific role holders. Check the "gated to" section to see which role you would need to claim it.
- */
  const claim = async (request: ClaimRequest): Promise<void> => {
     const db: Db = await MongoDbUtils.connect('bountyboard');
     const bountyCollection = db.collection('bounties');
@@ -98,7 +92,7 @@ const publish = async (request: PublishRequest): Promise<void> => {
         _id: new mongo.ObjectId(request.bountyId),
     });
 
-    if (dbBountyResult.gate && request.userId !== dbBountyResult.gate[0]) {
+    if (! (await DiscordUtils.hasAllowListedRole(request.userId, request.guildId, dbBountyResult.gate))) {
         throw new AuthorizationError(
             `Thank you for giving bounty commands a try!\n` +
             `It looks like you don't have permission to ${request.activity} this bounty.\n` +

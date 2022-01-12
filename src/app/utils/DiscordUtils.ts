@@ -40,20 +40,21 @@ const DiscordUtils = {
 		return messageText;
 	},
 
-    isAllowListedRole(guildMember: GuildMember, roles: string[]): boolean {
-		return DiscordUtils.hasSomeRole(guildMember, roles);
+    async hasAllowListedRole(userId: string, guildId: string, roles: string[]): Promise<boolean> {
+		return await DiscordUtils.hasSomeRole(userId, guildId, roles);
 	},
 
-    hasSomeRole(guildMember: GuildMember, roles: string[]): boolean {
+    async hasSomeRole(userId: string, guildId: string, roles: string[]): Promise<boolean> {
 		for (const role of roles) {
-			if (DiscordUtils.hasRole(guildMember, role)) {
+			if (await DiscordUtils.hasRole(userId, guildId, role)) {
 				return true;
 			}
 		}
 		return false;
 	},
 
-    hasRole(guildMember: GuildMember, role: string): boolean {
+    async hasRole(userId: string, guildId: string, role: string): Promise<boolean> {
+        const guildMember = await DiscordUtils.getGuildMemberFromUserId(userId, guildId);
 		return guildMember.roles.cache.some(r => r.id === role);
 	},
 

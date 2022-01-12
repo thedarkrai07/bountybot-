@@ -1,14 +1,12 @@
 import { HelpRequest } from '../../requests/HelpRequest';
 import DiscordUtils from '../../utils/DiscordUtils';
-import Log, { LogUtils } from '../../utils/Log';
-import { GuildMember, MessageEmbed, Message, TextChannel } from 'discord.js';
+import Log from '../../utils/Log';
+import { GuildMember } from 'discord.js';
 import MongoDbUtils from '../../utils/MongoDbUtils';
-import mongo, { Db, UpdateWriteOpResult } from 'mongodb';
+import mongo, { Db } from 'mongodb';
 import { BountyCollection } from '../../types/bounty/BountyCollection';
 import { CustomerCollection } from '../../types/bounty/CustomerCollection';
-import RuntimeError from '../../errors/RuntimeError';
 import { BountyStatus } from '../../constants/bountyStatus';
-import { BountyEmbedFields } from '../../constants/embeds';
 
 
 export const helpBounty = async (request: HelpRequest): Promise<void> => {
@@ -24,7 +22,12 @@ export const helpBounty = async (request: HelpRequest): Promise<void> => {
         `${bountyUrl}\n` + 
         `Don't hesitate to reach out to your favorite Bounty Board representative with any questions!`;
 
-    await bountyCreator.send({ content: creatorHelpDM})
+    const userHelpDM = 
+        `<@${bountyCreator.id}> has been notified of your request for help with the following bounty:\n` +
+        `${bountyUrl};`
+    
+    await bountyCreator.send({ content: creatorHelpDM});
+    await helpRequestedUser.send({ content: userHelpDM });
     return;
 }
 
@@ -44,7 +47,6 @@ const getDbHandler = async (request: HelpRequest): Promise<{dbBountyResult: Boun
 
 	const dbBountyResult: BountyCollection = await bountyCollection.findOne({
 		_id: new mongo.ObjectId(request.bountyId),
-		status: BountyStatus.in_review,
 	});
 
     const dbCustomerResult: CustomerCollection = await customerCollection.findOne({
