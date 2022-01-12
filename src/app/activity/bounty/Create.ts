@@ -99,7 +99,7 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
             url: (process.env.BOUNTY_BOARD_URL + listOfBountyIds[0]),
             author: {
                 icon_url: guildMember.user.avatarURL(),
-                name: newBounty.createdBy.discordHandle,
+                name: `${newBounty.createdBy.discordHandle}: ${guildId}`,
             },
             description: newBounty.description,
             fields: [
@@ -113,7 +113,7 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
                 { name: 'Bounty Id', value: listOfBountyIds[0], inline: false },
                 { name: 'Criteria', value: newBounty.criteria.toString() },
                 { name: 'Reward', value: newBounty.reward.amount + ' ' + newBounty.reward.currency, inline: true },
-                { name: 'Status', value: 'Open', inline: true },
+                { name: 'Status', value: BountyStatus.open, inline: true },
                 { name: 'Deadline', value: BountyUtils.formatDisplayDate(newBounty.dueAt), inline: true },
                 { name: 'Created by', value: newBounty.createdBy.discordHandle.toString(), inline: true },
             ],
@@ -133,11 +133,7 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
     const message: Message = await guildMember.send(bountyPreview);
 
     await message.react('👍');
-    //TODO: fix edit functionality
-    //await message.react('📝');
-    await message.react('❌');
-
-    return await handleBountyReaction(message, guildMember, guildId, listOfBountyIds);
+    return await message.react('❌');
 }
 
 const createDbHandler = async (
@@ -221,61 +217,4 @@ export const generateBountyRecord = (
     }
 
     return bountyRecord;
-};
-
-// TO-DO: consider whether this awkward callback is needed.
-// The message reaction triggers the MessageReactionAdd event anyways.
-const handleBountyReaction = (message: Message, guildMember: GuildMember, guildID: string, bountyIds: string[]): Promise<any> => {
-    return message.awaitReactions({
-        max: 1,
-        time: (6000 * 60),
-        errors: ['time'],
-        filter: async (reaction, user) => {
-            return ['👍', '❌'].includes(reaction.emoji.name) && !user.bot;
-        },
-    }).then(async collected => {
-        const reaction: MessageReaction = collected.first();
-        if (reaction.emoji.name === '👍') {
-            Log.info('/bounty create new | :thumbsup: up given');
-            for (const bountyId of bountyIds) {
-                // TODO: should this go through the handler chain?
-                await publishBounty(new PublishRequest({
-                    commandContext: null,
-                    messageReactionRequest: null,
-                    directRequest: {
-                        bountyId: bountyId,
-                        guildId: guildID,
-                        userId: guildMember.user.id,
-                        activity: Activities.publish,
-                        // Keep a close eye on this value below in the future
-                        // This value is guaranteed to be false only when this code is hit through the slash command flow
-                        bot: guildMember.user.bot
-                    }
-                }));
-            }
-            return ;
-        } else if (reaction.emoji.name === '❌') {
-            // TODO: should this go through the handler chain?
-            Log.info('/bounty create new | delete given');
-            for (const bountyId of bountyIds) {
-                await deleteBounty(new DeleteRequest({
-                    commandContext: null,
-                    messageReactionRequest: null,
-                    directRequest: {
-                        bountyId: bountyId,
-                        guildId: guildID,
-                        userId: guildMember.user.id,
-                        activity: Activities.delete,
-                        // Keep a close eye on this value below in the future
-                        // This value is guaranteed to be false only when this code is hit through the slash command flow
-                        bot: guildMember.user.bot
-                    }
-                }));
-            }
-            return;
-        }
-    }).catch(e => {
-        LogUtils.logError('failed to handle bounty reaction', e);
-        return guildMember.send('Sorry something is not working and our devs are looking into it.');
-    })
 };

@@ -4,6 +4,7 @@ import { CommandContext } from 'slash-create'
 import { Request } from './Request'
 import { MessageReactionRequest } from '../types/discord/MessageReactionRequest';
 import { Activities } from '../constants/activities';
+import DiscordUtils from '../utils/DiscordUtils';
 
 export class PublishRequest extends Request {
     bountyId: string;
@@ -30,6 +31,7 @@ export class PublishRequest extends Request {
         else if (args.messageReactionRequest) {
             let messageReactionRequest: MessageReactionRequest = args.messageReactionRequest;
             super(Activities.publish, messageReactionRequest.message.guildId, messageReactionRequest.user.id, messageReactionRequest.user.bot);
+            this.bountyId = DiscordUtils.getBountyIdFromEmbedMessage(messageReactionRequest.message);
         }
         else if (args.directRequest) {
             super(args.directRequest.activity, args.directRequest.guildId, args.directRequest.userId, args.directRequest.bot);

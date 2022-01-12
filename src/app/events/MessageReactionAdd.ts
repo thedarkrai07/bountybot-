@@ -1,4 +1,4 @@
-import { Message, MessageReaction, PartialUser, User } from 'discord.js';
+import { DMChannel, Message, MessageReaction, PartialUser, TextChannel, User } from 'discord.js';
 import Log, { LogUtils } from '../utils/Log';
 import ValidationError from '../errors/ValidationError';
 import DiscordUtils from '../utils/DiscordUtils';
@@ -11,6 +11,8 @@ import { ClaimRequest } from '../requests/ClaimRequest';
 import { handler } from '../activity/bounty/Handler';
 import AuthorizationError from '../errors/AuthorizationError';
 import { BountyEmbedFields } from '../constants/embeds';
+import { PublishRequest } from '../requests/PublishRequest';
+import { Activities } from '../constants/activities';
 
 export default class implements DiscordEvent {
     name = 'messageReactionAdd';
@@ -48,7 +50,7 @@ export default class implements DiscordEvent {
 
     async messageReactionHandler(reaction: MessageReaction, user: User) {
         let message: Message = await reaction.message.fetch();
-        Log.info(`Processing reaction to message ${message.id}`)
+        Log.info(`Processing reaction ${reaction.emoji.name} to message ${message.id}`)
 
         if (message === null) {
             Log.debug('message not found');
@@ -59,15 +61,25 @@ export default class implements DiscordEvent {
             return;
         }
 
-        // TODO: consider whether the reaction callback on create is really needed, given this code path gets triggered as well
-        if (reaction.emoji.name === '👍') {
-            return;
-        }
-
         const bountyId: string = DiscordUtils.getBountyIdFromEmbedMessage(message);
         let request: any;
 
-        if (reaction.emoji.name === '🏴') {
+        if (reaction.emoji.name === '👍') {
+            Log.info(`${user.tag} attempting to publish bounty ${bountyId}`);
+            const guildId = message.embeds[0].author.name.split(': ')[1];
+
+            request = new PublishRequest({
+                commandContext: null,
+                messageReactionRequest: null,
+                directRequest: {
+                    bountyId: bountyId,
+                    guildId: guildId,
+                    userId: user.id,
+                    activity: Activities.publish,
+                    bot: user.bot
+                }
+            });
+        } else if (reaction.emoji.name === '🏴') {
             Log.info(`${user.tag} attempting to claim a bounty ${bountyId} from the bounty board`);
             request = new ClaimRequest({
                 commandContext: null,
@@ -79,14 +91,31 @@ export default class implements DiscordEvent {
 
         } else if (reaction.emoji.name === '❌') {
             Log.info(`${user.tag} attempting to delete bounty ${bountyId}`);
-            request = new DeleteRequest({
-                commandContext: null,
-                messageReactionRequest: {
-                    user: user,
-                    message: message
-                },
-                directRequest: null
-            });
+            const guildId = message.embeds[0].author.name.split(': ')[1];
+
+            if (message.channel instanceof DMChannel) {
+                request = new DeleteRequest({
+                    commandContext: null,
+                    messageReactionRequest: null,
+                    directRequest: {
+                        bountyId: bountyId,
+                        guildId: guildId,
+                        userId: user.id,
+                        activity: Activities.delete,
+                        bot: user.bot
+                    }
+                })
+            }
+            else if (message.channel instanceof TextChannel) {
+                request = new DeleteRequest({
+                    commandContext: null,
+                    messageReactionRequest: {
+                        user: user,
+                        message: message
+                    },
+                    directRequest: null
+                });
+        }
 
         } else if (reaction.emoji.name === '📮') {
             Log.info(`${user.tag} attempting to submit bounty ${bountyId}`);
@@ -118,7 +147,8 @@ export default class implements DiscordEvent {
                     message: message
                 }
             });
-
+        } else {
+            return;
         }
 
         try {

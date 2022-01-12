@@ -1,7 +1,7 @@
 import { DeleteRequest } from '../../requests/DeleteRequest';
 import DiscordUtils from '../../utils/DiscordUtils';
 import Log, { LogUtils } from '../../utils/Log';
-import { GuildMember, Message, TextChannel } from 'discord.js';
+import { DMChannel, GuildMember, Message, TextChannel } from 'discord.js';
 import MongoDbUtils from '../../utils/MongoDbUtils';
 import mongo, { Db, UpdateWriteOpResult } from 'mongodb';
 import { BountyCollection } from '../../types/bounty/BountyCollection';
@@ -28,7 +28,7 @@ export const deleteBounty = async (request: DeleteRequest): Promise<void> => {
         bountyEmbedMessage = request.message;
     }
     
-    await deleteBountyMessage(bountyEmbedMessage, deletedByUser);
+    await deleteBountyMessage(bountyEmbedMessage);
 	
 	const bountyUrl = process.env.BOUNTY_BOARD_URL + request.bountyId;
 	const creatorDeleteDM = 
@@ -109,6 +109,6 @@ const writeDbHandler = async (request: DeleteRequest, deletedByUser: GuildMember
     }
 }
 
-export const deleteBountyMessage = async (message: Message, deletedByUser: GuildMember): Promise<any> => {
-	await message.delete();
+export const deleteBountyMessage = async (message: Message): Promise<void> => {
+    await message.delete();
 };
