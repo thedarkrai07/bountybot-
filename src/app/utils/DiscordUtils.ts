@@ -3,6 +3,7 @@ import client from '../app';
 import { CommandContext } from 'slash-create';
 import ValidationError from '../errors/ValidationError';
 import { BountyEmbedFields } from '../constants/embeds';
+import Log from './Log';
 
 const DiscordUtils = {
     async getGuildMemberFromUserId(userId: string, guildId: string): Promise<GuildMember> {
@@ -45,7 +46,9 @@ const DiscordUtils = {
 	},
 
     async hasSomeRole(userId: string, guildId: string, roles: string[]): Promise<boolean> {
-		for (const role of roles) {
+		Log.info(`roles: ${roles}`);
+        console.log(roles);
+        for (const role of roles) {
 			if (await DiscordUtils.hasRole(userId, guildId, role)) {
 				return true;
 			}
