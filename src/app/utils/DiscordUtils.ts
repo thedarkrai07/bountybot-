@@ -46,8 +46,6 @@ const DiscordUtils = {
 	},
 
     async hasSomeRole(userId: string, guildId: string, roles: string[]): Promise<boolean> {
-		Log.info(`roles: ${roles}`);
-        console.log(roles);
         for (const role of roles) {
 			if (await DiscordUtils.hasRole(userId, guildId, role)) {
 				return true;
