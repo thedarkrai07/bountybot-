@@ -114,7 +114,7 @@ const BountyUtils = {
         const BOUNTY_ID_REGEX = /^[a-f\d]{24}$/i;
         if ((bountyId == null || !BOUNTY_ID_REGEX.test(bountyId))) {
             throw new ValidationError(
-                `Thank you for giving bounty board a try!` +
+                `Thank you for giving bounty board a try!\n` +
                 `Please enter a valid bounty ID, which can be found on the website or in the bounties channel \n` +
                 ` - ${process.env.BOUNTY_BOARD_URL}`
             );

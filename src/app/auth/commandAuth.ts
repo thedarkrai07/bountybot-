@@ -58,11 +58,11 @@ const create = async (request: CreateRequest): Promise<void> => {
     const db: Db = await MongoDbUtils.connect('bountyboard');
 	const dbCustomers = db.collection('customers');
 
-	const dbCustomerResult: CustomerCollection = await dbCustomers.findOne({
+	const customerResult: CustomerCollection = await dbCustomers.findOne({
 		customerId: request.guildId
 	});
 
-    if (! (await DiscordUtils.hasAllowListedRole(request.userId, request.guildId, dbCustomerResult.allowlistedRoles))) {
+    if (! (await DiscordUtils.hasAllowListedRole(request.userId, request.guildId, customerResult.allowlistedRoles))) {
         throw new AuthorizationError(`Thank you for giving bounty commands a try!\n` +
                                 `It looks like you don't have permission to use this command.\n` +
                                 `If you think this is an error, please reach out to a server admin for help.`);

@@ -70,12 +70,10 @@ const sendMultipleMessages = async (guildMember: GuildMember, dbRecords: Cursor,
 	return await guildMember.send({ content: `Please go to ${bountyChannelName} to take action.` });
 };
 
-// TODO: better as shared function
 export const generateListEmbedMessage = async (bountyRecord: Bounty, newStatus: string, guildID: string): Promise<MessageEmbedOptions> => {
 	let messageEmbedOptions: MessageEmbedOptions = {
 		color: 1998388,
 		title: bountyRecord.title,
-        // TODO BOUNTY_BOARD_URL should be multitenant
 		url: (process.env.BOUNTY_BOARD_URL + bountyRecord._id.toHexString()),
 		author: {
 			iconURL: bountyRecord.createdBy.iconUrl,
@@ -90,10 +88,7 @@ export const generateListEmbedMessage = async (bountyRecord: Bounty, newStatus: 
 			{ name: 'Deadline', value: formatDisplayDate(bountyRecord.dueAt), inline: true },
 			{ name: 'Created by', value: bountyRecord.createdBy.discordHandle, inline: true },
 		],
-		timestamp: new Date().getTime(),
-		// footer: {
-		// 	text: '🏴 - claim | 🔄 - refresh | 📝 - edit | ❌ - delete',
-		// },
+		timestamp: new Date(bountyRecord.createdAt).getTime(),
 	};
 
 	let isUser = true;

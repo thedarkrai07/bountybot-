@@ -60,9 +60,19 @@ const create = async (request: CreateRequest): Promise<void> => {
 
     BountyUtils.validateReward(request.reward);
 
-    BountyUtils.validateCopies(request.copies);
+    if (request.copies) {
+        BountyUtils.validateCopies(request.copies);
+        throw new ValidationError(
+            `The copies option is currently under construction.\n` +
+            `Please create bounties without copies.\n` + 
+            `If you have any questions or would like to use the copies feature, ` +
+            `please reach out to your favorite Bounty Board representative`
+        );
+    }
 
-    await BountyUtils.validateGate(request.gate, request.guildId);
+    if (request.gate) {
+        await BountyUtils.validateGate(request.gate, request.guildId);
+    }
 }
 
 const publish = async (request: PublishRequest): Promise<void> => {

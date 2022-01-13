@@ -48,11 +48,16 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
     }
     if (createRequest.copies > 1) {
         const totalReward = Number(createRequest.reward.split(' ')[0]) * createRequest.copies;
-        await guildMember.send({ content: `Are you sure you want to publish bounties with a \`total\` reward of \`${totalReward} ${createRequest.reward.split(' ')[1]}\`? (yes/no)` });
+        await guildMember.send({ content: 
+            `Are you sure you want to publish bounties with a \`total\` reward of \`${totalReward} ${createRequest.reward.split(' ')[1]}\`?\n` +
+            `('yes' to proceed, 'no' or 'n' to cancel.)` });
         const amountConfirmation: string = await DiscordUtils.awaitUserDM(dmChannel, replyOptions);
-        if (!(amountConfirmation == 'yes' || amountConfirmation == 'YES' || amountConfirmation == 'Y' || amountConfirmation == 'Yes')) {
-            guildMember.send({ content: 'Bounty deleted.' });
-            throw new ValidationError('<@${guildMember.user.id}> check DM for more information.');
+        if (amountConfirmation.toLowerCase() == 'no'  || amountConfirmation.toLowerCase() == 'n') {
+            throw new ValidationError(
+                `Thank you for using Bounty Board!\n` +
+                `As requested, this bounty has been canceled.\n` +
+                `To create a new bounty, please type '/bounty create' in the bounties channel.`
+                );
         }
     }
 
