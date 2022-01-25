@@ -37,7 +37,7 @@ export const claimBounty = async (request: ClaimRequest): Promise<any> => {
 
 	await createdByUser.send({ content: creatorClaimDM });
 
-	await claimedByUser.send({ content: `You have claimed this bounty: ${bountyUrl}! Reach out to <@${createdByUser.id}> (${createdByUser.displayName}) with any questions` });
+	await claimedByUser.send({ content: `You have claimed this bounty: ${bountyUrl} \nReach out to <@${createdByUser.id}> (${createdByUser.displayName}) with any questions` });
     return;
 };
 
@@ -111,7 +111,7 @@ export const claimBountyMessage = async (message: Message, claimedByUser: GuildM
 	embedMessage.setColor('#d39e00');
 	embedMessage.addField('Claimed by', claimedByUser.user.tag, true);
 
-	embedMessage.setFooter('📮 - submit | 🆘 - help');
+	embedMessage.setFooter({text: '📮 - submit | 🆘 - help'});
 	await message.edit({ embeds: [embedMessage] });
 	await addClaimReactions(message);
 };

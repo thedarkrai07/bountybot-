@@ -127,7 +127,7 @@ export const submitBountyMessage = async (message: Message, submittedByUser: Gui
 	embedMessage.fields[BountyEmbedFields.status].value = BountyStatus.in_review;
 	embedMessage.setColor('#d39e00');
 	embedMessage.addField('Submitted by', submittedByUser.user.tag, true);
-	embedMessage.setFooter('✅ - complete |  🆘 - help');
+	embedMessage.setFooter({text: '✅ - complete |  🆘 - help'});
 	await message.edit({ embeds: [embedMessage] });
 	await addSubmitReactions(message);
 };

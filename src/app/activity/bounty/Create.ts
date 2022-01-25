@@ -19,11 +19,15 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
     const guildMember: GuildMember = guildAndMember.guildMember;
     const guildId: string = guildAndMember.guild.id;
 
-    const workNeededMessage: Message = await guildMember.send({ content: `Hello <@${guildMember.id}>! Can you tell me a description of your bounty?` });
+    const createInfoMessage = `Hello <@${guildMember.id}>!\n` +
+        `Please respond to the following questions within 5 minutes.\n` +
+        `Can you tell me a description of your bounty?`;
+    const workNeededMessage: Message = await guildMember.send({ content: createInfoMessage });
     const dmChannel: DMChannel = await workNeededMessage.channel.fetch() as DMChannel;
     const replyOptions: AwaitMessagesOptions = {
         max: 1,
-        time: 180000,
+        // time is in ms
+        time: 300000,
         errors: ['time'],
     };
 
@@ -65,7 +69,10 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
     do {
         // TODO: update default date to a reaction instead of text input
         // TODO: update hardcoded no/skip to a REGEX
-        await guildMember.send({ content: 'Please enter `UTC` date in format `yyyy-mm-dd`, i.e 2022-01-01`? (type \'no\' or \'skip\' for a default value of 3 months from today)' });
+        const dueDateMessage = 
+            'When is the work for this bounty due by?\n' + 
+            'Please enter `UTC` date in format `yyyy-mm-dd`, i.e 2022-01-01`? (type \'no\' or \'skip\' for a default value of 3 months from today)';
+        await guildMember.send({ content:  dueDateMessage});
         const dueAtMessageText = await DiscordUtils.awaitUserDM(dmChannel, replyOptions);
 
         if (! (dueAtMessageText.toLowerCase() === 'no' || dueAtMessageText.toLowerCase() === 'skip') ) {
@@ -134,7 +141,11 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
         bountyPreview.embeds[0].fields.push({ name: 'Gated to', value: role.name, inline: false });
     }
 
-    await guildMember.send('Thank you! Does this look right?');
+    const publishOrDeleteMessage = 
+        'Thank you! If it looks good, please hit 👍 to publish the bounty.\n' +
+        'Once the bounty has been published, others can view and claim the bounty.\n' +
+        'If you are not happy with the bounty, hit ❌ to delete it and start over.\n'
+    await guildMember.send(publishOrDeleteMessage);
     const message: Message = await guildMember.send(bountyPreview);
 
     await message.react('👍');
