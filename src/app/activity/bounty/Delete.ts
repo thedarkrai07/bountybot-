@@ -19,20 +19,33 @@ export const deleteBounty = async (request: DeleteRequest): Promise<void> => {
 
     let bountyEmbedMessage: Message;
     if (!request.message) {
-        const bountyChannel: TextChannel = await deletedByUser.guild.channels.fetch(getDbResult.bountyChannel) as TextChannel;
-        bountyEmbedMessage = await bountyChannel.messages.fetch(getDbResult.dbBountyResult.discordMessageId).catch(e => {
-            LogUtils.logError(`could not find bounty ${request.bountyId} in discord #bounty-board channel ${bountyChannel.id} in guild ${request.guildId}`, e);
-            throw new RuntimeError(e);
-        });
+        if (getDbResult.dbBountyResult.discordMessageId !== undefined) {
+            const bountyChannel: TextChannel = await deletedByUser.guild.channels.fetch(getDbResult.bountyChannel) as TextChannel;
+            bountyEmbedMessage = await bountyChannel.messages.fetch(getDbResult.dbBountyResult.discordMessageId).catch(e => {
+                LogUtils.logError(`could not find bounty ${request.bountyId} in discord #bounty-board channel ${bountyChannel.id} in guild ${request.guildId}`, e);
+                throw new RuntimeError(e);
+            });
+        } else {
+            const bountyChannel: TextChannel = await deletedByUser.client.channels.fetch(getDbResult.dbBountyResult.creatorMessage.channelId) as TextChannel;
+            bountyEmbedMessage = await bountyChannel.messages.fetch(getDbResult.dbBountyResult.creatorMessage.messageId).catch(e => {
+                LogUtils.logError(`could not find bounty ${request.bountyId} in DM channel ${bountyChannel.id} in guild ${request.guildId}`, e);
+                throw new RuntimeError(e);
+            });
+        }
     } else {
         bountyEmbedMessage = request.message;
     }
-    
+   
     await deleteBountyMessage(bountyEmbedMessage);
 	
 	const bountyUrl = process.env.BOUNTY_BOARD_URL + request.bountyId;
-	const creatorDeleteDM = 
+	let creatorDeleteDM = 
         `The following bounty has been deleted: ${bountyUrl}\n`;
+
+    if (getDbResult.dbBountyResult.evergreen && getDbResult.dbBountyResult.isParent &&
+        getDbResult.dbBountyResult.childrenIds !== undefined && getDbResult.dbBountyResult.childrenIds.length > 0) {
+        creatorDeleteDM += 'Children bounties created from this evergreen bounty will remain.\n';
+    }
 
     await deletedByUser.send({ content: creatorDeleteDM });
     return;
