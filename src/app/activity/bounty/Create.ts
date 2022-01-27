@@ -221,6 +221,7 @@ export const generateBountyRecord = (
         if (createRequest.claimLimit !== undefined) {
             bountyRecord.claimLimit = createRequest.claimLimit;
         }
+    }
 
     if (createRequest.assign) {
         bountyRecord.assign = createRequest.assign;
