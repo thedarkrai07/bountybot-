@@ -7,6 +7,7 @@ import DiscordUtils from '../../utils/DiscordUtils';
 import { ListRequest } from '../../requests/ListRequest';
 import { CustomerCollection } from '../../types/bounty/CustomerCollection';
 import { BountyStatus } from '../../constants/bountyStatus';
+import BountyUtils from '../../utils/BountyUtils';
 
 const DB_RECORD_LIMIT = 10;
 
@@ -65,13 +66,13 @@ const sendMultipleMessages = async (listUser: GuildMember, dbRecords: Cursor, gu
 		listOfBounties.push(messageOptions);
 	}
 	await (listUser.send({ embeds: listOfBounties }));
-	return await listUser.send({ content: `Please go to ${bountyChannelName} to take action.` });
+	return await listUser.send({ content: `Please go to ${bountyChannelName} or your DMs to take action.` });
 };
 
 export const generateListEmbedMessage = async (bountyRecord: Bounty, newStatus: string, guildID: string): Promise<MessageEmbedOptions> => {
 	let messageEmbedOptions: MessageEmbedOptions = {
 		color: 1998388,
-		title: bountyRecord.title,
+		title: BountyUtils.createPublicTitle(bountyRecord),
 		url: (process.env.BOUNTY_BOARD_URL + bountyRecord._id.toHexString()),
 		author: {
 			iconURL: bountyRecord.createdBy.iconUrl,
@@ -94,6 +95,11 @@ export const generateListEmbedMessage = async (bountyRecord: Bounty, newStatus: 
 		],
 		timestamp: new Date(bountyRecord.createdAt).getTime(),
 	};
+
+	if (bountyRecord.claimedBy !== undefined) {
+		messageEmbedOptions.fields.push(
+			{ name: 'Claimed by', value: bountyRecord.claimedBy.discordHandle, inline: false })
+	}
 
     let role: Role;
 	if(bountyRecord.gate) {

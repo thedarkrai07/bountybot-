@@ -1,12 +1,14 @@
 import { CommandContext } from 'slash-create'
 import { GuildMember, TextChannel, Message, MessageEmbedOptions } from 'discord.js'
-import Log from '../../utils/Log';
+import Log, { LogUtils } from '../../utils/Log';
 import mongo, { Db, UpdateWriteOpResult } from 'mongodb';
 import MongoDbUtils from '../../utils/MongoDbUtils';
 import { BountyCollection } from '../../types/bounty/BountyCollection';
+import { Bounty } from '../../types/bounty/Bounty';
 import { CustomerCollection } from '../../types/bounty/CustomerCollection';
 import DiscordUtils from '../../utils/DiscordUtils';
 import BountyUtils from '../../utils/BountyUtils';
+import RuntimeError from '../../errors/RuntimeError';
 import { PublishRequest } from '../../requests/PublishRequest';
 import { BountyStatus } from '../../constants/bountyStatus';
 
@@ -17,16 +19,28 @@ export const publishBounty = async (publishRequest: PublishRequest): Promise<any
     const { guildMember } = await DiscordUtils.getGuildAndMember(publishRequest.guildId, publishRequest.userId);
 
     const [dbBountyResult, dbCustomerResult] = await getDbHandler(bountyId, guildId);
+
+	
 	const messageOptions: MessageEmbedOptions = await generateEmbedMessage(dbBountyResult, 'Open', guildId);
 
-	const bountyChannel: TextChannel = await guildMember.guild.channels.fetch(dbCustomerResult.bountyChannel) as TextChannel;
+	const bountyChannel: TextChannel = await guildMember.client.channels.fetch(dbCustomerResult.bountyChannel) as TextChannel;
 	const bountyMessage: Message = await bountyChannel.send({ embeds: [messageOptions] });
-	Log.info('bounty published to #bounty-board');
+	Log.info(`bounty published to ${bountyChannel.name}`);
 	addPublishReactions(bountyMessage);
 
     await writeDbHandler(dbBountyResult, bountyMessage.id);
 
-    await guildMember.send({ content: `Bounty published to #🧀-bounty-board and the website! ${process.env.BOUNTY_BOARD_URL}${bountyId}` });
+    await guildMember.send({ content: `Bounty published to ${bountyChannel.name} and the website! ${process.env.BOUNTY_BOARD_URL}${bountyId}` });
+
+	// Remove old publish preview
+	if (dbBountyResult.creatorMessage !== undefined) {
+		const dmChannel = await guildMember.client.channels.fetch(dbBountyResult.creatorMessage.channelId) as TextChannel;
+		const previewMessage = await dmChannel.messages.fetch(dbBountyResult.creatorMessage.messageId).catch(e => {
+			LogUtils.logError(`could not find bounty ${dbBountyResult._id} in channel ${dmChannel.id} in guild ${guildId}`, e);
+			throw new RuntimeError(e);
+		});
+		await previewMessage.delete();
+	}
 	
 	return;
 }
@@ -57,6 +71,7 @@ const writeDbHandler = async (dbBountyResult: BountyCollection, bountyMessageId:
 			status: BountyStatus.open,
 			discordMessageId: bountyMessageId,
 		},
+		$unset: { creatorMessage: "" } ,
 		$push: {
 			statusHistory: {
 				status: BountyStatus.open,
@@ -75,15 +90,14 @@ const writeDbHandler = async (dbBountyResult: BountyCollection, bountyMessageId:
 export const addPublishReactions = (message: Message): void => {
 	message.reactions.removeAll();
 	message.react('🏴');
-	//message.react('🔄');
-	//message.react('📝');
 	message.react('❌');
 };
 
 export const generateEmbedMessage = async (dbBounty: BountyCollection, newStatus: string, guildID: string): Promise<MessageEmbedOptions> => {
+
 	let messageEmbedOptions: MessageEmbedOptions = {
 		color: 1998388,
-		title: dbBounty.title,
+		title: BountyUtils.createPublicTitle(<Bounty>dbBounty),
 		url: (process.env.BOUNTY_BOARD_URL + dbBounty._id.toHexString()),
 		author: {
 			iconURL: dbBounty.createdBy.iconUrl,
@@ -99,9 +113,6 @@ export const generateEmbedMessage = async (dbBounty: BountyCollection, newStatus
 			{ name: 'Created by', value: dbBounty.createdBy.discordHandle, inline: true },
 		],
 		timestamp: new Date().getTime(),
-		// footer: {
-		// 	text: '🏴 - claim | 🔄 - refresh | 📝 - edit | ❌ - delete',
-		// },
 		footer: {
 			text: '🏴 - claim | ❌ - delete',
 		},

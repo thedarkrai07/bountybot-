@@ -1,5 +1,6 @@
 import { Double, Int32, ObjectId } from 'mongodb';
 
+// TODO - *TWE I don't think we need both this and BountyCollection. Settle on one or the other
 export interface Bounty {
 	_id?: ObjectId,
 	season?: string,
@@ -16,9 +17,15 @@ export interface Bounty {
 	status?: string,
 	statusHistory: Status[],
 	discordMessageId?: string,
+	creatorMessage?: MessageInfo,
+	claimantMessage?: MessageInfo,
 	customerId: string,
-	customer_id: string,
 	gate?: string[],
+	evergreen?: boolean,
+	claimLimit?: Int32,
+	isParent?: boolean,
+	parentId?: string,
+	childrenIds?: ObjectId[]
 	assign?: string,
 	assignedName?: string
 }
@@ -29,11 +36,15 @@ export type UserObject = {
 	iconUrl: string,
 };
 
+export type MessageInfo = {
+	messageId: string,
+	channelId: string,
+};
+
 export type Reward = {
 	currency: string,
 	amount: Double,
 	scale: Int32,
-	amountWithoutScale: Int32,
 };
 
 export type Status = {

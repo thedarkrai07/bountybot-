@@ -1,4 +1,3 @@
-import { User} from 'discord.js';
 import  { CommandContext } from 'slash-create';
 import { Request } from './Request';
 import { Activities } from '../constants/activities';
@@ -8,6 +7,8 @@ export class CreateRequest extends Request {
     guildId: string;
     title: string;
     reward: string;
+    evergreen: boolean;
+    claimLimit: number;
     copies: number;
     gate: string;
     assign: string;
@@ -21,7 +22,7 @@ export class CreateRequest extends Request {
         commandContext: CommandContext, 
     }) {
         if (args.commandContext) {
-            let commandContext: CommandContext = args.commandContext;
+            const commandContext: CommandContext = args.commandContext;
             if (commandContext.subcommands[0] !== Activities.create) {
                 throw new Error('CreateRequest attempted for non Create activity.');
             }
@@ -29,14 +30,14 @@ export class CreateRequest extends Request {
             this.userId = commandContext.user.id;
             this.title = commandContext.options.create['title'];
             this.reward = commandContext.options.create['reward'];
-            this.copies = commandContext.options.create['copies'];
+            this.evergreen = commandContext.options.create['evergreen'];
+            this.claimLimit = commandContext.options.create['claim-limit'];
             this.gate = commandContext.options.create['gate'];
             this.assign = commandContext.options.create['assign']
 
             // TODO: remove
             this.commandContext = commandContext;
-        }
-        else {
+        } else {
             throw new Error('Command context is required to be not null for CreateRequest construction.');
         }
     }
