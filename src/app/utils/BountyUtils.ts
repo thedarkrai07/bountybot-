@@ -1,10 +1,12 @@
 import ValidationError from '../errors/ValidationError';
 import Log, { LogUtils } from './Log';
+import { Role } from 'discord.js';
 import DiscordUtils from '../utils/DiscordUtils';
 import { URL } from 'url';
 import { BountyCollection } from '../types/bounty/BountyCollection';
-import { Bounty } from '../types/bounty/Bounty';
+import { Applicant, Bounty } from '../types/bounty/Bounty';
 import { BountyStatus } from '../constants/bountyStatus';
+import { CreateRequest } from '../requests/CreateRequest';
 const BountyUtils = {
     TWENTYFOUR_HOURS_IN_SECONDS: 24*60*60,
 
@@ -78,12 +80,26 @@ const BountyUtils = {
         }
     },
 
-    validateEvergreen(evergreen: boolean, claimLimit: number) {
+    validateEvergreen(evergreen: boolean, claimLimit: number, gateOrAssign: boolean) {
+        if (evergreen && gateOrAssign) {
+            throw new ValidationError('Cannot use gate or assign-to with evergreen bounties');
+        }
         if (!evergreen && claimLimit !== undefined) {
             throw new ValidationError('claim-limit is only used for evergreen bounties.');
         }
         if (claimLimit !== undefined && (claimLimit < 2 || claimLimit > 100)) {
             throw new ValidationError('claim-limit should be from 2 to 100');
+        }
+    },
+
+    validateRequireApplications(request: CreateRequest) {
+        if (request.evergreen && request.requireApplication) {
+            throw new ValidationError('Cannot require applications on evergreen bounties.');
+        }
+
+        // TODO Allow requireApplications on gated bounties
+        if (request.requireApplication && (request.assign || request.gate)) {
+            throw new ValidationError('Cannot require applications on assigned or gated bounties.');
         }
     },
 
@@ -97,7 +113,12 @@ const BountyUtils = {
         }
     },
 
-    async validateAssign(assign: string, guildId: string): Promise<void> {
+    async validateAssign(assign: string, guildId: string, applicants: Applicant[]): Promise<void> {
+        if (applicants && !applicants.some(applicant => applicant.discordId == assign)) {
+            let applicantList: string = '';
+            applicants.forEach( applicant => { applicantList += `\n ${applicant.discordHandle}`});
+            throw new ValidationError(`Please assign this bounty to a user from the list of applicants: ${applicantList}`);
+        }
         try {
             await DiscordUtils.getGuildMemberFromUserId(assign, guildId);
         }
@@ -163,6 +184,17 @@ const BountyUtils = {
         }
     },
 
+    validatePitch(pitch: string): void {
+        const SUBMIT_PITCH_REGEX = /^[\w\s\W]{1,4000}$/;
+        if (pitch == null || !SUBMIT_PITCH_REGEX.test(pitch)) {
+            throw new ValidationError(
+                'Please enter a pitch with a maximum of 4000 characters, and the following requirements: \n' +
+                '- alphanumeric\n ' +
+                '- special characters: .!@#$%&,?'
+            );
+        }
+    },
+
     getClaimedAt(bountyRecord: BountyCollection): string | null {
         const statusHistory = bountyRecord.statusHistory;
         if (!statusHistory) {
@@ -189,7 +221,7 @@ const BountyUtils = {
         return elapsedSeconds < BountyUtils.TWENTYFOUR_HOURS_IN_SECONDS;
     },
 
-    createPublicTitle(bountyRecord: Bounty): string {
+    async createPublicTitle(bountyRecord: Bounty): Promise<string> {
         let title = bountyRecord.title;
         if (bountyRecord.evergreen && bountyRecord.isParent) {
             if (bountyRecord.claimLimit !== undefined) {
@@ -197,6 +229,24 @@ const BountyUtils = {
                 title += `\n(${claimsAvailable} claim${claimsAvailable !== 1 ? "s" : ""} available)`;
             } else {
                 title += '\n(Infinite claims available)';
+            }
+        }
+        if (bountyRecord.assign) {
+            title += `\n(Assigned to ${bountyRecord.assignedName})`
+        } else if (bountyRecord.gate) {
+            const role: Role = await DiscordUtils.getRoleFromRoleId(bountyRecord.gate[0], bountyRecord.customerId);
+            title += `\n(Gated to ${role.name})`;
+        } else {
+            if (bountyRecord.requireApplication) {
+                title += `\n(Requires application before claiming`;
+                if (bountyRecord.applicants) {
+                    if (bountyRecord.applicants.length == 1) {
+                        title += `. 1 applicant so far.`;
+                    } else {
+                        title += `. ${bountyRecord.applicants.length} applicants so far.`;
+                    }
+                }
+                title += ')'
             }
         }
         return title;
