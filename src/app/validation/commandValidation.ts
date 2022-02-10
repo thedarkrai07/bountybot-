@@ -162,7 +162,9 @@ const assign = async (request: AssignRequest): Promise<void> => {
 
     if (!dbBountyResult.requireApplication) {
         throw new ValidationError(
-            `This bounty did not require applications, so it is not assignable.`
+            `This bounty did not require applications, so it is not assignable.\n` +
+            `If you would like to assign a bounty without requiring applications, ` +
+            `please use /bounty create with the 'assign-to' option.`
         );
     }
 
@@ -182,7 +184,9 @@ const assign = async (request: AssignRequest): Promise<void> => {
 
     if (!dbBountyResult.applicants) {
         throw new ValidationError(
-            `No users have applied for this bounty yet.`
+            `No users have applied for this bounty yet.\n` +
+            `If you'd like to assign this bounty to <@${request.assign}>, ` +
+            `please ask them to apply for this bounty in the bounty channel with 🙋 or with /bounty apply.`
         );
     }
 
