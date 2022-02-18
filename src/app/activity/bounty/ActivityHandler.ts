@@ -10,6 +10,8 @@ import { paidBounty } from './Paid'
 import { listBounty } from './List'
 import { deleteBounty } from './Delete'
 import { helpBounty } from './Help'
+import { upsertUserWallet } from '../user/RegisterWallet';
+import { tagBounty } from './Tag';
 
 
 import { Guild, GuildMember } from 'discord.js';
@@ -31,7 +33,7 @@ import { Activities } from '../../constants/activities';
 import DiscordUtils from '../../utils/DiscordUtils';
 import { GmRequest } from '../../requests/GmRequest'
 import { UpsertUserWalletRequest } from '../../requests/UpsertUserWalletRequest'
-import { upsertUserWallet } from '../user/RegisterWallet'
+import { TagRequest } from '../../requests/TagRequest'
 
 export const BountyActivityHandler = {
     /**
@@ -84,6 +86,9 @@ export const BountyActivityHandler = {
                 break;
             case Activities.registerWallet:
                 await upsertUserWallet(request as UpsertUserWalletRequest);
+                break;
+            case Activities.tag:
+                await tagBounty(request as TagRequest);
                 break;
             case 'gm':
                 let gmRequest: GmRequest = request;

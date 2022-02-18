@@ -19,6 +19,7 @@ import { PaidRequest } from '../requests/PaidRequest';
 import { HelpRequest } from '../requests/HelpRequest';
 import { DeleteRequest } from '../requests/DeleteRequest';
 import { UpsertUserWalletRequest } from '../requests/UpsertUserWalletRequest';
+import { TagRequest } from '../requests/TagRequest';
 
 
 const ValidationModule = {
@@ -54,6 +55,8 @@ const ValidationModule = {
                 return help(request as HelpRequest);
             case Activities.registerWallet:
                 return registerWallet(request as UpsertUserWalletRequest);
+            case Activities.tag:
+                return tag(request as TagRequest);
             case 'gm':
                 return;
             default:
@@ -393,5 +396,28 @@ const registerWallet = async (request: UpsertUserWalletRequest): Promise<void> =
 
     if (request.address) {
         WalletUtils.validateEthereumWalletAddress(request.address)
+    }
+}
+
+const tag = async (request: TagRequest): Promise<void> => {
+    Log.debug(`Validating activity ${request.activity}`);
+
+    BountyUtils.validateBountyId(request.bountyId);
+
+    const db: Db = await MongoDbUtils.connect('bountyboard');
+    const dbCollectionBounties = db.collection('bounties');
+    const dbBountyResult: BountyCollection = await dbCollectionBounties.findOne({
+        _id: new mongo.ObjectId(request.bountyId),
+    });
+
+    if (!dbBountyResult) {
+        throw new ValidationError(
+            `Please select a valid bounty id to ${request.activity}. ` +
+            `Check your previous DMs from bountybot for the correct id.`
+        );
+    }
+
+    if (request.tag) {
+        BountyUtils.validateTag(request.tag);
     }
 }
