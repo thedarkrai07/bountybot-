@@ -11,4 +11,5 @@ export class Activities {
     static paid = 'paid';
     static help = 'help';
     static registerWallet = 'register-wallet';
+    static tag = 'tag';
 }

@@ -54,6 +54,18 @@ const BountyUtils = {
         }
     },
 
+    validateTag(tag: string): void {
+        const CREATE_TAG_REGEX = /^[\w\s\W]{1,80}$/;
+        if (tag == null || !CREATE_TAG_REGEX.test(tag)) {
+            throw new ValidationError(
+                'Please enter a valid tag: \n' +
+                '- 80 characters maximum\n ' +
+                '- alphanumeric\n ' +
+                '- special characters: .!@#$%&,?:|-_',
+            );
+        }
+    },
+
     validateReward(rewardInput: string): void {
         const [stringAmount, symbol] = (rewardInput != null) ? rewardInput.split(' ') : [null, null];
         const ALLOWED_CURRENCIES = ['BANK', 'ETH', 'BTC', 'USDC', 'USDT', 'TempCity', 'gOHM', 'LUSD', 'FOX', 'oneFOX'];

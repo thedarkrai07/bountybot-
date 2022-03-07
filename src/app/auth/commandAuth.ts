@@ -18,6 +18,7 @@ import { BountyStatus } from '../constants/bountyStatus';
 import { HelpRequest } from '../requests/HelpRequest';
 import { DeleteRequest } from '../requests/DeleteRequest';
 import { PaidRequest } from '../requests/PaidRequest';
+import { TagRequest } from '../requests/TagRequest';
 
 const AuthorizationModule = {
     /**
@@ -58,6 +59,8 @@ const AuthorizationModule = {
                 return help(request as HelpRequest);
             case Activities.registerWallet:
                 return;
+            case Activities.tag:
+                return tag(request as TagRequest)
 			case 'gm':
                 return;
         }
@@ -262,6 +265,24 @@ const help = async (request: HelpRequest): Promise<void> => {
                 `Please reach out to your favorite bounty board representative with any questions!` 
                 );
         }
+    }
+}
+
+const tag = async (request: TagRequest): Promise<void> => {
+    const db: Db = await MongoDbUtils.connect('bountyboard');
+    const bountyCollection = db.collection('bounties');
+    const dbBountyResult: BountyCollection = await bountyCollection.findOne({
+        _id: new mongo.ObjectId(request.bountyId),
+    });
+
+    if (request.userId !== dbBountyResult.createdBy.discordId) {
+        throw new AuthorizationError(
+            `Thank you for giving bounty commands a try!\n` +
+            `It looks like you don't have permission to ${request.activity} this bounty.\n` +
+            `This bounty can only be tagged by <@${dbBountyResult.createdBy.discordId}>. \n` +
+            `At this time, you can only tag bounties that you have created.\n` +
+            `Please reach out to your favorite bounty board representative with any questions!` 
+            );
     }
 }
 

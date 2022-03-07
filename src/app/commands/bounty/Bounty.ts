@@ -24,6 +24,7 @@ import { GmRequest } from '../../requests/GmRequest';
 import AuthorizationError from '../../errors/AuthorizationError';
 import DiscordUtils from '../../utils/DiscordUtils';
 import { guildIds } from '../../constants/customerIds';
+import { TagRequest } from '../../requests/TagRequest';
 
 
 export default class Bounty extends SlashCommand {
@@ -181,6 +182,25 @@ export default class Bounty extends SlashCommand {
                             name: 'bounty-id',
                             type: CommandOptionType.STRING,
                             description: 'Bounty ID',
+                            required: true,
+                        },
+                    ],
+                },
+                {
+                    name: Activities.tag,
+                    type: CommandOptionType.SUB_COMMAND,
+                    description: 'Tag this bounty. Useful to group similar bounties for csv payments.',
+                    options: [
+                        {
+                            name: 'bounty-id',
+                            type: CommandOptionType.STRING,
+                            description: 'Bounty ID',
+                            required: true,
+                        },
+                        {
+                            name: 'tag',
+                            type: CommandOptionType.STRING,
+                            description: 'Tag (i.e. \'Note Taking: January\' ',
                             required: true,
                         },
                     ],
@@ -348,6 +368,12 @@ export default class Bounty extends SlashCommand {
                 break;
             case Activities.help:
                 request = new HelpRequest({
+                    commandContext: commandContext,
+                    messageReactionRequest: null
+                });
+                break;
+            case Activities.tag:
+                request = new TagRequest({
                     commandContext: commandContext,
                     messageReactionRequest: null
                 });
