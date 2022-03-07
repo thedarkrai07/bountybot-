@@ -11,6 +11,8 @@ import RuntimeError from '../../errors/RuntimeError';
 import { BountyEmbedFields } from '../../constants/embeds';
 import { BountyStatus } from '../../constants/bountyStatus';
 import BountyUtils from '../../utils/BountyUtils';
+import { Activities } from '../../constants/activities';
+import { Clients } from '../../constants/clients';
 
 export const claimBounty = async (request: ClaimRequest): Promise<any> => {
     Log.debug('In Claim activity');
@@ -20,7 +22,10 @@ export const claimBounty = async (request: ClaimRequest): Promise<any> => {
     
     let getDbResult: {dbBountyResult: BountyCollection, bountyChannel: string} = await getDbHandler(request);
 
-    const claimedBounty = await writeDbHandler(request, getDbResult.dbBountyResult, claimedByUser);
+    let claimedBounty = getDbResult.dbBountyResult;
+    if (!request.clientSyncRequest) {
+        claimedBounty = await writeDbHandler(request, getDbResult.dbBountyResult, claimedByUser);
+    }
     
     let bountyEmbedMessage: Message;
     // TODO: consider changing claim, submit, complete, and delete requests to have a channel id instead of the complete Message
@@ -162,6 +167,11 @@ const writeDbHandler = async (request: ClaimRequest, dbBountyResult: BountyColle
                 status: BountyStatus.in_progress,
                 setAt: currentDate,
             },
+            activityHistory: {
+				activity: Activities.claim,
+				modifiedAt: currentDate,
+				client: Clients.bountybot,
+			}
         },
     });
 

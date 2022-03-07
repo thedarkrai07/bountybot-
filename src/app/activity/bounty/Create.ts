@@ -8,7 +8,10 @@ import { Db, UpdateWriteOpResult, Double, Int32 } from 'mongodb'
 import ValidationError from '../../errors/ValidationError';
 import { CreateRequest } from '../../requests/CreateRequest';
 import { BountyStatus } from '../../constants/bountyStatus';
+import { BountyCollection } from '../../types/bounty/BountyCollection';
+import { Clients } from '../../constants/clients';
 import { PaidStatus } from '../../constants/paidStatus';
+import { Activities } from '../../constants/activities';
 
 export const createBounty = async (createRequest: CreateRequest): Promise<any> => {
     Log.debug('In Create activity');
@@ -253,6 +256,13 @@ export const generateBountyRecord = (
                 status: status,
                 setAt: currentDate,
             },
+        ],
+        activityHistory: [
+            {
+                activity: Activities.create,
+                modifiedAt: currentDate,
+                client: Clients.bountybot,
+            }
         ],
         status: status,
         paidStatus: createRequest.isIOU ? PaidStatus.unpaid : null,

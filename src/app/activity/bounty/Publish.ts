@@ -1,5 +1,4 @@
-import { CommandContext } from 'slash-create'
-import { GuildMember, TextChannel, Message, MessageEmbedOptions } from 'discord.js'
+import { TextChannel, Message, MessageEmbedOptions } from 'discord.js'
 import Log, { LogUtils } from '../../utils/Log';
 import mongo, { Db, UpdateWriteOpResult } from 'mongodb';
 import MongoDbUtils from '../../utils/MongoDbUtils';
@@ -11,6 +10,8 @@ import BountyUtils from '../../utils/BountyUtils';
 import RuntimeError from '../../errors/RuntimeError';
 import { PublishRequest } from '../../requests/PublishRequest';
 import { BountyStatus } from '../../constants/bountyStatus';
+import { Activities } from '../../constants/activities';
+import { Clients } from '../../constants/clients';
 
 export const publishBounty = async (publishRequest: PublishRequest): Promise<any> => {
 	Log.debug('In Publish activity');
@@ -20,17 +21,18 @@ export const publishBounty = async (publishRequest: PublishRequest): Promise<any
     const guildId = publishRequest.guildId;
     const { guildMember } = await DiscordUtils.getGuildAndMember(publishRequest.guildId, publishRequest.userId);
 
-    const [dbBountyResult, dbCustomerResult] = await getDbHandler(bountyId, guildId);
+    const [dbBountyResult, dbCustomerResult] = await getDbHandler(bountyId, guildId, publishRequest);
 
-	
-	const messageOptions: MessageEmbedOptions = await generateEmbedMessage(dbBountyResult, 'Open', guildId);
+	const messageOptions: MessageEmbedOptions = await generateEmbedMessage(dbBountyResult, BountyStatus.open, guildId);
 
 	const bountyChannel: TextChannel = await guildMember.client.channels.fetch(dbCustomerResult.bountyChannel) as TextChannel;
 	const bountyMessage: Message = await bountyChannel.send({ embeds: [messageOptions] });
 	Log.info(`bounty published to ${bountyChannel.name}`);
 	addPublishReactions(bountyMessage, dbBountyResult.requireApplication);
 
-    await writeDbHandler(dbBountyResult, bountyMessage.id);
+    if (!publishRequest.clientSyncRequest) {
+		await writeDbHandler(dbBountyResult, bountyMessage.id);
+	}
 
     await guildMember.send({ content: `Bounty published to ${bountyChannel.name} and the website! <${process.env.BOUNTY_BOARD_URL}${bountyId}>` });
 
@@ -43,21 +45,26 @@ export const publishBounty = async (publishRequest: PublishRequest): Promise<any
 		});
 		await previewMessage.delete();
 	}
+
+	await updateMessageStore(dbBountyResult, bountyMessage);
 	
 	return;
 }
 
-const getDbHandler = async (bountyId: string, guildId: string): Promise<[BountyCollection, CustomerCollection]> => {
+const getDbHandler = async (bountyId: string, guildId: string, request: PublishRequest): Promise<[BountyCollection, CustomerCollection]> => {
     Log.debug(`Entered get DbHandler for publish`);
     const db: Db = await MongoDbUtils.connect('bountyboard');
 	const dbCollectionBounties = db.collection('bounties');
     const dbCollectionCustomers = db.collection('customers');
+
+	const status = request.clientSyncRequest ? 'Open' : 'Draft';
+
     const dbCustomerResult: CustomerCollection = await dbCollectionCustomers.findOne({
 		customerId: guildId
 	});
     const dbBountyResult: BountyCollection = await dbCollectionBounties.findOne({
 		_id: new mongo.ObjectId(bountyId),
-		status: 'Draft',
+		status: status,
 	});
 
     return [dbBountyResult, dbCustomerResult];
@@ -71,7 +78,6 @@ const writeDbHandler = async (dbBountyResult: BountyCollection, bountyMessageId:
 	const writeResult: UpdateWriteOpResult = await dbCollectionBounties.updateOne(dbBountyResult, {
 		$set: {
 			status: BountyStatus.open,
-			discordMessageId: bountyMessageId,
 		},
 		$unset: { creatorMessage: "" } ,
 		$push: {
@@ -79,6 +85,11 @@ const writeDbHandler = async (dbBountyResult: BountyCollection, bountyMessageId:
 				status: BountyStatus.open,
 				setAt: currentDate,
 			},
+			activityHistory: {
+				activity: Activities.publish,
+				modifiedAt: currentDate,
+				client: Clients.bountybot,
+			}
 		},
 	});
 
@@ -137,3 +148,20 @@ export const generateEmbedMessage = async (dbBounty: BountyCollection, newStatus
 
 	return messageEmbedOptions;
 };
+
+export const updateMessageStore = async (bounty: BountyCollection, card: Message): Promise<any> => {
+	const db: Db = await MongoDbUtils.connect('bountyboard');
+	const dbCollectionBounties = db.collection('bounties');
+
+	const writeResult: UpdateWriteOpResult = await dbCollectionBounties.updateOne(
+		{_id: new mongo.ObjectId(bounty._id)}, {
+		$set: {
+			discordMessageId: card.id,
+		},
+	});
+
+	if (writeResult.result.ok !== 1) {
+        Log.error(`failed to update publish bounty with message Id ${card.id}`);
+        throw new Error(`Write to database for bounty ${bounty._id} failed. `);
+    }
+}
