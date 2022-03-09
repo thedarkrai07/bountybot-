@@ -315,7 +315,10 @@ const complete = async (request: CompleteRequest): Promise<void> => {
             'Check your previous DMs from bountybot for the correct id.')
     }
 
-    if (dbBountyResult.status && dbBountyResult.status !== BountyStatus.in_review) {
+    const inReview = dbBountyResult.status && dbBountyResult.status === BountyStatus.in_review;
+    const inProgress = dbBountyResult.status && dbBountyResult.status === BountyStatus.in_progress;
+
+    if (dbBountyResult.status && !(inProgress || inReview)) {
         throw new ValidationError(`The bounty id you have selected is in status ${dbBountyResult.status}\n` +
             `Currently, only bounties with status ${BountyStatus.in_review} can be marked for completion.\n` +
             `Please reach out to your favorite Bounty Board representative with any questions!`)

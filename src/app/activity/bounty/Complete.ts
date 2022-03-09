@@ -21,6 +21,7 @@ export const completeBounty = async (request: CompleteRequest): Promise<void> =>
 		request.guildId = getDbResult.dbBountyResult.customerId;
 	}
     const completedByUser = await DiscordUtils.getGuildMemberFromUserId(request.userId, request.guildId);
+	const bountyCompletedFromInProgress = (getDbResult.dbBountyResult.status == BountyStatus.in_progress);
 	Log.info(`${request.bountyId} bounty completed by ${completedByUser.user.tag}`);
 	
     await writeDbHandler(request, completedByUser);
@@ -49,6 +50,8 @@ export const completeBounty = async (request: CompleteRequest): Promise<void> =>
         completorMessage = request.message;
     }
 
+	// This logic works for both claim -> submit -> complete and claim -> complete
+	// TODO: submitterMessage is now a naming issue, as claimantMessage is also valid
 	if (getDbResult.dbBountyResult.claimantMessage !== undefined) {
 		const bountyChannel: TextChannel = await completedByUser.client.channels.fetch(getDbResult.dbBountyResult.claimantMessage.channelId) as TextChannel;
 		submitterMessage = await bountyChannel.messages.fetch(getDbResult.dbBountyResult.claimantMessage.messageId).catch(e => {
@@ -58,7 +61,14 @@ export const completeBounty = async (request: CompleteRequest): Promise<void> =>
 	}
 
 	const bountyUrl = process.env.BOUNTY_BOARD_URL + request.bountyId;
-	const submittedByUser: GuildMember = await completedByUser.guild.members.fetch(getDbResult.dbBountyResult.submittedBy.discordId);
+	
+	let submittedByUserId: string;
+	if (bountyCompletedFromInProgress) {
+		submittedByUserId = getDbResult.dbBountyResult.claimedBy.discordId;
+	} else {
+		submittedByUserId = getDbResult.dbBountyResult.submittedBy.discordId;
+	}
+	const submittedByUser = await completedByUser.guild.members.fetch(submittedByUserId);
     
     await completeBountyMessage(getDbResult.dbBountyResult, completorMessage, submitterMessage, completedByUser, submittedByUser);
 	
@@ -73,7 +83,7 @@ export const completeBounty = async (request: CompleteRequest): Promise<void> =>
 	
     
     await completedByUser.send({ content: creatorCompleteDM });
-    await submittedByUser.send({ content: submitterCompleteDM})
+    await submittedByUser.send({ content: submitterCompleteDM });
     return;
 }
 
@@ -93,7 +103,6 @@ const getDbHandler = async (request: CompleteRequest): Promise<{dbBountyResult: 
 
 	const dbBountyResult: BountyCollection = await bountyCollection.findOne({
 		_id: new mongo.ObjectId(request.bountyId),
-		status: BountyStatus.in_review,
 	});
 
     if (request.message) {
@@ -120,7 +129,6 @@ const writeDbHandler = async (request: CompleteRequest, completedByUser: GuildMe
 
 	const dbBountyResult: BountyCollection = await bountyCollection.findOne({
 		_id: new mongo.ObjectId(request.bountyId),
-		status: BountyStatus.in_review,
 	});
 
 	const currentDate = (new Date()).toISOString();

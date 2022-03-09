@@ -140,11 +140,11 @@ const writeDbHandler = async (request: SubmitRequest, submittedByUser: GuildMemb
 }
 
 // Remove message from location found. Replace with new message with correct actions in correct location
-export const submitBountyMessage = async (submittedBounty: BountyCollection, message: Message, submittedByUser: GuildMember, createdByUser: GuildMember): Promise<any> => {
+export const submitBountyMessage = async (submittedBounty: BountyCollection, submitterMessage: Message, submittedByUser: GuildMember, createdByUser: GuildMember): Promise<any> => {
 	Log.debug('fetching bounty message for submit');
 
-	let embedMessage: MessageEmbed = new MessageEmbed(message.embeds[0]);
-	await message.delete();
+	let embedMessage: MessageEmbed = new MessageEmbed(submitterMessage.embeds[0]);
+	await submitterMessage.delete();
 	embedMessage.fields[BountyEmbedFields.status].value = BountyStatus.in_review;
 	embedMessage.setColor('#d39e00');
 	embedMessage.addField('Submitted by', submittedByUser.user.tag, true);
