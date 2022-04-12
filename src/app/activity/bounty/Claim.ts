@@ -11,14 +11,21 @@ import RuntimeError from '../../errors/RuntimeError';
 import { BountyEmbedFields } from '../../constants/embeds';
 import { BountyStatus } from '../../constants/bountyStatus';
 import BountyUtils from '../../utils/BountyUtils';
+import { Activities } from '../../constants/activities';
+import { Clients } from '../../constants/clients';
 
 export const claimBounty = async (request: ClaimRequest): Promise<any> => {
+    Log.debug('In Claim activity');
+
     const claimedByUser = await DiscordUtils.getGuildMemberFromUserId(request.userId, request.guildId);
     Log.info(`${request.bountyId} bounty claimed by ${claimedByUser.user.tag}`);
     
     let getDbResult: {dbBountyResult: BountyCollection, bountyChannel: string} = await getDbHandler(request);
 
-    const claimedBounty = await writeDbHandler(request, getDbResult.dbBountyResult, claimedByUser);
+    let claimedBounty = getDbResult.dbBountyResult;
+    if (!request.clientSyncRequest) {
+        claimedBounty = await writeDbHandler(request, getDbResult.dbBountyResult, claimedByUser);
+    }
     
     let bountyEmbedMessage: Message;
     // TODO: consider changing claim, submit, complete, and delete requests to have a channel id instead of the complete Message
@@ -34,18 +41,20 @@ export const claimBounty = async (request: ClaimRequest): Promise<any> => {
 
     // Need to refresh original bounty so the messages are correct
     getDbResult = await getDbHandler(request); 
-
-    await claimBountyMessage(bountyEmbedMessage, claimedBounty, claimedByUser, getDbResult.dbBountyResult);
+    const createdByUser: GuildMember = await claimedByUser.guild.members.fetch(getDbResult.dbBountyResult.createdBy.discordId);
+    await claimBountyMessage(bountyEmbedMessage, claimedBounty, createdByUser, claimedByUser, getDbResult.dbBountyResult);
     
     const bountyUrl = process.env.BOUNTY_BOARD_URL + claimedBounty._id;
     const origBountyUrl = process.env.BOUNTY_BOARD_URL + getDbResult.dbBountyResult._id;
-    const createdByUser: GuildMember = await claimedByUser.guild.members.fetch(getDbResult.dbBountyResult.createdBy.discordId);
-    let creatorClaimDM = `Your bounty has been claimed by <@${claimedByUser.user.id}> ${bountyUrl}`;
+    let creatorClaimDM = 
+    `Your bounty has been claimed by <@${claimedByUser.user.id}> <${bountyUrl}>\n` +
+    `You are free to complete this bounty and/or to mark it as paid at any time.\n` +
+    `Marking a bounty as complete and/or paid may help you with accounting or project status tasks later on.`;
     if (getDbResult.dbBountyResult.evergreen) {
         if (getDbResult.dbBountyResult.status == BountyStatus.open) {
-            creatorClaimDM += `\nSince you marked your original bounty as evergreen, it will stay on the board as Open. ${origBountyUrl}`;
+            creatorClaimDM += `\nSince you marked your original bounty as multi-claimant, it will stay on the board as Open. <${origBountyUrl}>`;
         } else {
-            creatorClaimDM += `\nYour evergreen bounty has reached its claim limit and has been marked deleted. ${origBountyUrl}`;
+            creatorClaimDM += `\nYour multi-claimant bounty has reached its claim limit and has been marked deleted. <${origBountyUrl}>`;
         }
     }
 
@@ -160,6 +169,11 @@ const writeDbHandler = async (request: ClaimRequest, dbBountyResult: BountyColle
                 status: BountyStatus.in_progress,
                 setAt: currentDate,
             },
+            activityHistory: {
+				activity: Activities.claim,
+				modifiedAt: currentDate,
+				client: Clients.bountybot,
+			}
         },
     });
 
@@ -171,7 +185,7 @@ const writeDbHandler = async (request: ClaimRequest, dbBountyResult: BountyColle
     return claimedBounty;
 }
 
-export const claimBountyMessage = async (message: Message, claimedBounty: BountyCollection, claimedByUser: GuildMember, originalBounty: BountyCollection): Promise<any> => {
+export const claimBountyMessage = async (message: Message, claimedBounty: BountyCollection, createdByUser: GuildMember, claimedByUser: GuildMember, originalBounty: BountyCollection): Promise<any> => {
     Log.debug(`fetching bounty message for claim`)
     
     const existingEmbeds = message.embeds[0];
@@ -184,11 +198,17 @@ export const claimBountyMessage = async (message: Message, claimedBounty: Bounty
     embedNewMessage.setURL(process.env.BOUNTY_BOARD_URL + claimedBounty._id.toString());
     embedNewMessage.setColor('#d39e00');
     embedNewMessage.addField('Claimed by', claimedByUser.user.tag, true);
+
+
     embedNewMessage.setFooter({text: '📮 - submit | 🆘 - help'});
     const claimantMessage: Message = await claimedByUser.send({ embeds: [embedNewMessage] });
-    await addClaimReactions(claimantMessage);
+    await addClaimantReactions(claimantMessage);
 
-    // If Bounty status is no longer open, delete the board message, otherwise update title
+    embedNewMessage.setFooter({text: '✅ - complete | 💰 - mark as paid'});
+	const creatorMessage: Message = await createdByUser.send({ embeds: [embedNewMessage] });
+	await addCreatorReactions(creatorMessage);
+
+    // Evergreen: If Bounty status is no longer open, delete the board message, otherwise update title
     if (originalBounty.status !== BountyStatus.open) {
         await message.delete();
     } else {
@@ -196,32 +216,42 @@ export const claimBountyMessage = async (message: Message, claimedBounty: Bounty
         embedOrigMessage.setTitle(await BountyUtils.createPublicTitle(<Bounty>originalBounty));
         await message.edit({ embeds: [embedOrigMessage] });
     }
-    await updateMessageStore(claimedBounty, claimantMessage);
+    await updateMessageStore(claimedBounty, claimantMessage, creatorMessage);
 
 };
 
-export const addClaimReactions = async (message: Message): Promise<any> => {
+export const addClaimantReactions = async (message: Message): Promise<any> => {
     // await message.reactions.removeAll();
     await message.react('📮');
     await message.react('🆘');
 };
 
+export const addCreatorReactions = async (message: Message): Promise<any> => {
+    // await message.reactions.removeAll();
+    await message.react('✅');
+    await message.react('💰');
+};
+
 // Save where we sent the Bounty message embeds for future updates
-export const updateMessageStore = async (bounty: BountyCollection, message: Message): Promise<any> => {
+export const updateMessageStore = async (bounty: BountyCollection, claimantMessage: Message, creatorMessage: Message): Promise<any> => {
     const db: Db = await MongoDbUtils.connect('bountyboard');
     const bountyCollection = db.collection('bounties');
     const writeResult: UpdateWriteOpResult = await bountyCollection.updateOne({ _id: new mongo.ObjectId(bounty._id) }, {
         $set: {
             claimantMessage: {
-                messageId: message.id,
-                channelId: message.channelId,
+                messageId: claimantMessage.id,
+                channelId: claimantMessage.channelId,
+            },
+            creatorMessage: {
+                messageId: creatorMessage.id,
+                channelId: creatorMessage.channelId,
             },
         },
         $unset: { discordMessageId: "" },
     });
   
     if (writeResult.result.ok !== 1) {
-        Log.error('failed to update claimed bounty with message Id');
+        Log.error('failed to update claimed bounty record with message store');
         throw new Error(`Write to database for bounty ${bounty._id} failed. `);
     }
 

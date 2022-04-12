@@ -13,7 +13,11 @@ export interface BountyCollection extends Collection {
 	reviewedBy: UserObject,
 	createdAt: string,
 	dueAt: string,
+	submittedAt: string,
+	submissionUrl: string,
+	submissionNotes: string,
 	status: string,
+	paidStatus: string,
 	statusHistory: Status[],
 	discordMessageId: string,
 	creatorMessage: MessageInfo,
@@ -29,6 +33,10 @@ export interface BountyCollection extends Collection {
 	assignedName: string,
 	requireApplication: boolean,
 	applicants: Applicant[],
+	activityHistory: ClientInteraction[],
+	isIOU: boolean,
+	resolutionNote: string,
+	owedTo: UserObject
 }
 
 export type UserObject = {
@@ -58,3 +66,9 @@ export type Status = {
 	status: string,
 	setAt: string,
 }
+
+export type ClientInteraction = {
+	activity: string,
+	modifiedAt: string,
+	client: string
+};

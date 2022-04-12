@@ -9,9 +9,11 @@ import { CustomerCollection } from '../../types/bounty/CustomerCollection';
 import RuntimeError from '../../errors/RuntimeError';
 import { BountyStatus } from '../../constants/bountyStatus';
 import { BountyEmbedFields } from '../../constants/embeds';
+import { PaidStatus } from '../../constants/paidStatus';
 
 
 export const completeBounty = async (request: CompleteRequest): Promise<void> => {
+	Log.debug('In Complete activity');
 
     const getDbResult: {dbBountyResult: BountyCollection, bountyChannel: string} = await getDbHandler(request);
 	// Since we are in DMs with new flow, guild might not be populated in the request
@@ -19,6 +21,7 @@ export const completeBounty = async (request: CompleteRequest): Promise<void> =>
 		request.guildId = getDbResult.dbBountyResult.customerId;
 	}
     const completedByUser = await DiscordUtils.getGuildMemberFromUserId(request.userId, request.guildId);
+	const bountyCompletedFromInProgress = (getDbResult.dbBountyResult.status == BountyStatus.in_progress);
 	Log.info(`${request.bountyId} bounty completed by ${completedByUser.user.tag}`);
 	
     await writeDbHandler(request, completedByUser);
@@ -47,6 +50,8 @@ export const completeBounty = async (request: CompleteRequest): Promise<void> =>
         completorMessage = request.message;
     }
 
+	// This logic works for both claim -> submit -> complete and claim -> complete
+	// TODO: submitterMessage is now a naming issue, as claimantMessage is also valid
 	if (getDbResult.dbBountyResult.claimantMessage !== undefined) {
 		const bountyChannel: TextChannel = await completedByUser.client.channels.fetch(getDbResult.dbBountyResult.claimantMessage.channelId) as TextChannel;
 		submitterMessage = await bountyChannel.messages.fetch(getDbResult.dbBountyResult.claimantMessage.messageId).catch(e => {
@@ -56,22 +61,38 @@ export const completeBounty = async (request: CompleteRequest): Promise<void> =>
 	}
 
 	const bountyUrl = process.env.BOUNTY_BOARD_URL + request.bountyId;
-	const submittedByUser: GuildMember = await completedByUser.guild.members.fetch(getDbResult.dbBountyResult.submittedBy.discordId);
+	
+	let submittedByUserId: string;
+	if (bountyCompletedFromInProgress) {
+		submittedByUserId = getDbResult.dbBountyResult.claimedBy.discordId;
+	} else {
+		submittedByUserId = getDbResult.dbBountyResult.submittedBy.discordId;
+	}
+	const submittedByUser = await completedByUser.guild.members.fetch(submittedByUserId);
     
     await completeBountyMessage(getDbResult.dbBountyResult, completorMessage, submitterMessage, completedByUser, submittedByUser);
 	
-	const creatorCompleteDM = 
-        `Thank you for reviewing ${bountyUrl}\n` +
-        `Please remember to tip <@${submittedByUser.id}>`;
-
+	let creatorCompleteDM = 
+        `Thank you for reviewing <${bountyUrl}>\n` +
+		`This bounty is now complete.\n`;
+        
+	if (!getDbResult.dbBountyResult.paidStatus || getDbResult.dbBountyResult.paidStatus === PaidStatus.unpaid) {
+		creatorCompleteDM = creatorCompleteDM.concat(`Please remember to mark this bounty as paid (💰)and pay <@${submittedByUser.id}>`);
+	}
+	else {
+		creatorCompleteDM = creatorCompleteDM.concat(
+			`No further action is required for this bounty.\n` +
+			`You can search for this bounty at ${process.env.BOUNTY_BOARD_URL} or by running '/bounty list' and selecting completed by me`
+		);
+	}
     
-    const submitterCompleteDM = 
-        `Your bounty has passed review and is now complete!\n${bountyUrl}\n` +
-        `<@${completedByUser.id}> should be tipping you with ${getDbResult.dbBountyResult.reward.amount} ${getDbResult.dbBountyResult.reward.currency} soon`;
-	
+    let submitterCompleteDM = `Your bounty has passed review and is now complete!\n<${bountyUrl}>\n`;
+	if (!getDbResult.dbBountyResult.paidStatus || getDbResult.dbBountyResult.paidStatus === PaidStatus.unpaid) {
+		submitterCompleteDM = submitterCompleteDM.concat(`<@${completedByUser.id}> should be paying you with ${getDbResult.dbBountyResult.reward.amount} ${getDbResult.dbBountyResult.reward.currency} soon.`);
+	}
     
     await completedByUser.send({ content: creatorCompleteDM });
-    await submittedByUser.send({ content: submitterCompleteDM})
+    await submittedByUser.send({ content: submitterCompleteDM });
     return;
 }
 
@@ -91,7 +112,6 @@ const getDbHandler = async (request: CompleteRequest): Promise<{dbBountyResult: 
 
 	const dbBountyResult: BountyCollection = await bountyCollection.findOne({
 		_id: new mongo.ObjectId(request.bountyId),
-		status: BountyStatus.in_review,
 	});
 
     if (request.message) {
@@ -118,7 +138,6 @@ const writeDbHandler = async (request: CompleteRequest, completedByUser: GuildMe
 
 	const dbBountyResult: BountyCollection = await bountyCollection.findOne({
 		_id: new mongo.ObjectId(request.bountyId),
-		status: BountyStatus.in_review,
 	});
 
 	const currentDate = (new Date()).toISOString();
@@ -133,6 +152,8 @@ const writeDbHandler = async (request: CompleteRequest, completedByUser: GuildMe
             // note that createdAt, claimedAt are not part of the BountyCollection type
 			reviewedAt: currentDate,
 			status: BountyStatus.complete,
+			paidStatus: dbBountyResult.isIOU ? PaidStatus.paid: null,
+			resolutionNote: request.resolutionNote,
 		},
 		$push: {
 			statusHistory: {
@@ -158,18 +179,26 @@ export const completeBountyMessage = async (completedBounty: BountyCollection, c
 	embedMessage.fields[BountyEmbedFields.status].value = BountyStatus.complete;
 	embedMessage.setColor('#01d212');
 	embedMessage.addField('Completed by', completedByUser.user.tag, true);
-	embedMessage.setFooter({text: ''});
+	let completorReactionFooterText = '';
+	if (!completedBounty.paidStatus || completedBounty.paidStatus === PaidStatus.unpaid) {
+		completorReactionFooterText = completorReactionFooterText.concat('💰 - mark as paid')
+	}
+	
+	embedMessage.setFooter({text: completorReactionFooterText});
 
 	const submittedMessage: Message = await submittedByUser.send({ embeds: [embedMessage] });
-	await addCompleteReactions(submittedMessage);
+	await submittedMessage.react('🔥');
 	const completedMessage: Message = await completedByUser.send({ embeds: [embedMessage] });
-	await addCompleteReactions(completedMessage);
+	await addCompleteReactions(completedMessage, completedBounty);
 
 	await updateMessageStore(completedBounty, submittedMessage, completedMessage);
 };
 
-export const addCompleteReactions = async (message: Message): Promise<any> => {
+export const addCompleteReactions = async (message: Message, bounty: BountyCollection): Promise<any> => {
 	await message.react('🔥');
+	if (!bounty.paidStatus || bounty.paidStatus === PaidStatus.unpaid) {
+		await message.react('💰');
+	}
 };
 
 // Save where we sent the Bounty message embeds for future updates

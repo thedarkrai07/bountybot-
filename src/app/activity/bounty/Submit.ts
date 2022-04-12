@@ -9,9 +9,11 @@ import { CustomerCollection } from '../../types/bounty/CustomerCollection';
 import RuntimeError from '../../errors/RuntimeError';
 import { BountyStatus } from '../../constants/bountyStatus';
 import { BountyEmbedFields } from '../../constants/embeds';
+import { PaidStatus } from '../../constants/paidStatus';
 
 
 export const submitBounty = async (request: SubmitRequest): Promise<void> => {
+	Log.debug('In Submit activity');
 	
     const getDbResult: {dbBountyResult: BountyCollection, bountyChannel: string} = await getDbHandler(request);
 	// Since we are in DMs with new flow, guild might not be populated in the request
@@ -19,11 +21,13 @@ export const submitBounty = async (request: SubmitRequest): Promise<void> => {
 		request.guildId = getDbResult.dbBountyResult.customerId;
 	}
     const submittedByUser = await DiscordUtils.getGuildMemberFromUserId(request.userId, request.guildId);
+	const createdByUser: GuildMember = await submittedByUser.guild.members.fetch(getDbResult.dbBountyResult.createdBy.discordId);
 	Log.info(`${request.bountyId} bounty submitted by ${submittedByUser.user.tag}`);
 
     await writeDbHandler(request, submittedByUser);
 
-    let bountyEmbedMessage: Message;
+	let submitterMessage: Message;
+	let completorMessage: Message;
 	let channelId: string;
 	let messageId: string;
 
@@ -38,20 +42,28 @@ export const submitBounty = async (request: SubmitRequest): Promise<void> => {
 			messageId = getDbResult.dbBountyResult.discordMessageId;
 		}
 		const bountyChannel = await submittedByUser.client.channels.fetch(channelId) as TextChannel;
-		bountyEmbedMessage = await bountyChannel.messages.fetch(messageId).catch(e => {
+		submitterMessage = await bountyChannel.messages.fetch(messageId).catch(e => {
 			LogUtils.logError(`could not find bounty ${request.bountyId} in channel ${channelId} in guild ${request.guildId}`, e);
 			throw new RuntimeError(e);
 		});
     } else {
-        bountyEmbedMessage = request.message;
+        submitterMessage = request.message;
     }
 
+	if (getDbResult.dbBountyResult.creatorMessage !== undefined) {
+		const bountyChannel: TextChannel = await createdByUser.client.channels.fetch(getDbResult.dbBountyResult.creatorMessage.channelId) as TextChannel;
+		completorMessage = await bountyChannel.messages.fetch(getDbResult.dbBountyResult.creatorMessage.messageId).catch(e => {
+			LogUtils.logError(`could not find bounty ${request.bountyId} in DM channel ${bountyChannel.id} in guild ${request.guildId}`, e);
+			throw new RuntimeError(e);
+		});
+	}
+
 	const bountyUrl = process.env.BOUNTY_BOARD_URL + request.bountyId;
-	const createdByUser: GuildMember = await submittedByUser.guild.members.fetch(getDbResult.dbBountyResult.createdBy.discordId);
-    
-    await submitBountyMessage(getDbResult.dbBountyResult, bountyEmbedMessage, submittedByUser, createdByUser);
 	
-	let creatorSubmitDM = `Please reach out to <@${submittedByUser.user.id}>. They are ready for bounty review ${bountyUrl}`
+    
+    await submitBountyMessage(getDbResult.dbBountyResult, submitterMessage, completorMessage, submittedByUser, createdByUser);
+	
+	let creatorSubmitDM = `Please reach out to <@${submittedByUser.user.id}>. They are ready for bounty review <${bountyUrl}>`
 
 	if (request.url) {
 		creatorSubmitDM += `\nPlease review this URL:\n${request.url}`
@@ -139,11 +151,12 @@ const writeDbHandler = async (request: SubmitRequest, submittedByUser: GuildMemb
 }
 
 // Remove message from location found. Replace with new message with correct actions in correct location
-export const submitBountyMessage = async (submittedBounty: BountyCollection, message: Message, submittedByUser: GuildMember, createdByUser: GuildMember): Promise<any> => {
+export const submitBountyMessage = async (submittedBounty: BountyCollection, submitterMessage: Message, completorMessage: Message, submittedByUser: GuildMember, createdByUser: GuildMember): Promise<any> => {
 	Log.debug('fetching bounty message for submit');
 
-	let embedMessage: MessageEmbed = new MessageEmbed(message.embeds[0]);
-	await message.delete();
+	let embedMessage: MessageEmbed = new MessageEmbed(submitterMessage.embeds[0]);
+	await submitterMessage.delete();
+	if (completorMessage) await completorMessage.delete();
 	embedMessage.fields[BountyEmbedFields.status].value = BountyStatus.in_review;
 	embedMessage.setColor('#d39e00');
 	embedMessage.addField('Submitted by', submittedByUser.user.tag, true);
@@ -152,10 +165,18 @@ export const submitBountyMessage = async (submittedBounty: BountyCollection, mes
 	const claimantMessage: Message = await submittedByUser.send({ embeds: [embedMessage] });
 	await claimantMessage.react('🆘');
 
-	embedMessage.setFooter({text: '✅ - complete'});
+	let creatorReactionFooterText = '✅ - complete';
+	if (!submittedBounty.paidStatus || submittedBounty.paidStatus === PaidStatus.unpaid) {
+		creatorReactionFooterText = creatorReactionFooterText.concat(' | 💰 - mark as paid')
+	}
+
+	embedMessage.setFooter({text: creatorReactionFooterText});
 	const creatorMessage: Message = await createdByUser.send({ embeds: [embedMessage] });
 	await creatorMessage.react('✅');
-
+	if (!submittedBounty.paidStatus || submittedBounty.paidStatus === PaidStatus.unpaid) {
+		await creatorMessage.react('💰');
+	}
+	
 
 	await updateMessageStore(submittedBounty, claimantMessage, creatorMessage);
 

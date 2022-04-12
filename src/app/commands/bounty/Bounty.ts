@@ -24,6 +24,7 @@ import { GmRequest } from '../../requests/GmRequest';
 import AuthorizationError from '../../errors/AuthorizationError';
 import DiscordUtils from '../../utils/DiscordUtils';
 import { guildIds } from '../../constants/customerIds';
+import { TagRequest } from '../../requests/TagRequest';
 
 
 export default class Bounty extends SlashCommand {
@@ -52,25 +53,19 @@ export default class Bounty extends SlashCommand {
                             required: true,
                         },
                         {
-                            name: 'evergreen',
-                            type: CommandOptionType.BOOLEAN,
-                            description: 'Make this bounty repeatedly claimable (true/false)',
-                            required: false,
-                        },
-                        {
-                            name: 'claim-limit',
+                            name: 'claimants',
                             type: CommandOptionType.INTEGER,
-                            description: 'Maximum number of claimants for an evergreen bounty (2 to 100)',
+                            description: 'Maximum number of claimants for this bounty (0 to 100, 0 means infinite)',
                             required: false,
                         },
                         {
-                            name: 'gate',
+                            name: 'for-role',
                             type: CommandOptionType.ROLE,
                             description: 'Select a role that will have permissions to claim this bounty',
                             required: false,
                         },
                         {
-                            name: 'assign-to',
+                            name: 'for-user',
                             type: CommandOptionType.USER,
                             description: 'Select a user that will have permissions to claim this bounty',
                             required: false,
@@ -78,7 +73,7 @@ export default class Bounty extends SlashCommand {
                         {
                             name: 'require-application',
                             type: CommandOptionType.BOOLEAN,
-                            description: 'Require users to apply before claiming',
+                            description: 'Require users to apply for a bounty. You choose who gets it.',
                             required: false,
                         }
                     ],
@@ -143,6 +138,63 @@ export default class Bounty extends SlashCommand {
                             name: 'bounty-id',
                             type: CommandOptionType.STRING,
                             description: 'Bounty ID',
+                            required: true,
+                        },
+                        {
+                            name: 'notes',
+                            type: CommandOptionType.STRING,
+                            description: 'Optional public notes',
+                            required: false,
+                        },
+                    ],
+                },
+                {
+                    name: Activities.assign,
+                    type: CommandOptionType.SUB_COMMAND,
+                    description: 'Assign a bounty as claimable by a user',
+                    options: [
+                        {
+                            name: 'bounty-id',
+                            type: CommandOptionType.STRING,
+                            description: 'Bounty ID',
+                            required: true,
+                        },
+                        {
+                            name: 'for-user',
+                            type: CommandOptionType.USER,
+                            description: 'Assigned User',
+                            required: true,
+                        },
+                    ],
+                },
+                {
+                    name: Activities.apply,
+                    type: CommandOptionType.SUB_COMMAND,
+                    description: 'Apply for a bounty',
+                    options: [
+                        {
+                            name: 'bounty-id',
+                            type: CommandOptionType.STRING,
+                            description: 'Bounty ID',
+                            required: true,
+                        },
+                    ],
+                },
+                {
+                    name: Activities.tag,
+                    type: CommandOptionType.SUB_COMMAND,
+                    description: 'Tag this bounty. Useful to group similar bounties for csv payments.',
+                    options: [
+                        {
+                            name: 'bounty-id',
+                            type: CommandOptionType.STRING,
+                            description: 'Bounty ID',
+                            required: true,
+                        },
+                        {
+                            name: 'tag',
+                            type: CommandOptionType.STRING,
+                            description: 'Tag (i.e. \'Note Taking: January\' ',
                             required: true,
                         },
                     ],
@@ -221,13 +273,19 @@ export default class Bounty extends SlashCommand {
                 {
                     name: Activities.delete,
                     type: CommandOptionType.SUB_COMMAND,
-                    description: 'Delete an open or in draft bounty',
+                    description: 'Delete an open or in draft bounty or IOU',
                     options: [
                         {
                             name: 'bounty-id',
                             type: CommandOptionType.STRING,
                             description: 'Bounty ID',
                             required: true,
+                        },
+                        {
+                            name: 'notes',
+                            type: CommandOptionType.STRING,
+                            description: 'Optional notes',
+                            required: false,
                         },
                     ],
                 },
@@ -239,7 +297,15 @@ export default class Bounty extends SlashCommand {
                 {
                     name: Activities.help,
                     type: CommandOptionType.SUB_COMMAND,
-                    description: 'FAQ for using bounty commands',
+                    description: 'FAQ for using bounty commands or help on a particular bounty',
+                    options: [
+                        {
+                            name: 'bounty-id',
+                            type: CommandOptionType.STRING,
+                            description: 'Bounty ID',
+                            required: false,
+                        },
+                    ],
                 },
             ],
             throttling: {
@@ -279,11 +345,25 @@ export default class Bounty extends SlashCommand {
                 request = new PublishRequest({
                     commandContext: commandContext,
                     messageReactionRequest: null,
-                    directRequest: null
+                    directRequest: null,
+                    clientSyncRequest: null,
                 });
                 break;
             case Activities.claim:
                 request = new ClaimRequest({
+                    commandContext: commandContext,
+                    messageReactionRequest: null,
+                    clientSyncRequest: null,
+                });
+                break;
+            case Activities.apply:
+                request = new ApplyRequest({
+                    commandContext: commandContext,
+                    messageReactionRequest: null
+                });
+                break;
+            case Activities.assign:
+                request = new AssignRequest({
                     commandContext: commandContext,
                     messageReactionRequest: null
                 });
@@ -326,6 +406,12 @@ export default class Bounty extends SlashCommand {
                 break;
             case Activities.help:
                 request = new HelpRequest({
+                    commandContext: commandContext,
+                    messageReactionRequest: null
+                });
+                break;
+            case Activities.tag:
+                request = new TagRequest({
                     commandContext: commandContext,
                     messageReactionRequest: null
                 });

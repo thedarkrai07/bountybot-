@@ -5,20 +5,24 @@ export interface Bounty {
 	_id?: ObjectId,
 	season?: string,
 	title: string,
-	description: string,
-	criteria: string,
+	description?: string,
+	criteria?: string,
 	reward: Reward,
 	createdBy?: UserObject,
 	claimedBy?: UserObject,
 	submittedBy?: UserObject,
 	reviewedBy?: UserObject,
 	createdAt: string,
-	dueAt: string,
+	dueAt?: string,
 	status?: string,
+	paidStatus?: string,
 	statusHistory: Status[],
 	discordMessageId?: string,
 	creatorMessage?: MessageInfo,
 	claimantMessage?: MessageInfo,
+	submittedAt?: string,
+	submissionUrl?: string,
+	submissionNotes?: string,
 	customerId: string,
 	gate?: string[],
 	evergreen?: boolean,
@@ -29,7 +33,11 @@ export interface Bounty {
 	assign?: string,
 	assignedName?: string,
 	requireApplication?: boolean,
-	applicants?: Applicant[]
+	applicants?: Applicant[],
+	activityHistory: ClientInteraction[],
+	isIOU?: boolean,
+	resolutionNote?: string,
+	owedTo?: UserObject
 }
 
 export type UserObject = {
@@ -58,4 +66,10 @@ export type Reward = {
 export type Status = {
 	status: string,
 	setAt: string,
-}
+};
+
+export type ClientInteraction = {
+	activity: string,
+	modifiedAt: string,
+	client: string
+};

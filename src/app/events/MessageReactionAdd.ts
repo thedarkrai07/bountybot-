@@ -12,6 +12,7 @@ import { handler } from '../activity/bounty/Handler';
 import AuthorizationError from '../errors/AuthorizationError';
 import { BountyEmbedFields } from '../constants/embeds';
 import { PublishRequest } from '../requests/PublishRequest';
+import { PaidRequest } from '../requests/PaidRequest';
 import { ApplyRequest } from '../requests/ApplyRequest';
 import { Activities } from '../constants/activities';
 
@@ -78,11 +79,22 @@ export default class implements DiscordEvent {
                     userId: user.id,
                     activity: Activities.publish,
                     bot: user.bot
-                }
+                },
+                clientSyncRequest: null,
             });
         } else if (reaction.emoji.name === '🏴') {
             Log.info(`${user.tag} attempting to claim a bounty ${bountyId} from the bounty board`);
             request = new ClaimRequest({
+                commandContext: null,
+                messageReactionRequest: {
+                    user: user,
+                    message: message
+                },
+                clientSyncRequest: null,
+            });
+        } else if (reaction.emoji.name === '💰') {
+            Log.info(`${user.tag} attempting to mark a bounty as paid ${bountyId} from the bounty board`);
+            request = new PaidRequest({
                 commandContext: null,
                 messageReactionRequest: {
                     user: user,
@@ -96,7 +108,7 @@ export default class implements DiscordEvent {
                 messageReactionRequest: {
                     user: user,
                     message: message
-                }
+                },
             });
 
         } else if (reaction.emoji.name === '❌') {
@@ -111,9 +123,10 @@ export default class implements DiscordEvent {
                         bountyId: bountyId,
                         guildId: guildId,
                         userId: user.id,
+                        resolutionNote: null,
                         activity: Activities.delete,
                         bot: user.bot
-                    }
+                    },
                 })
             }
             else if (message.channel instanceof TextChannel) {
@@ -123,7 +136,7 @@ export default class implements DiscordEvent {
                         user: user,
                         message: message
                     },
-                    directRequest: null
+                    directRequest: null,
                 });
         }
 
@@ -135,7 +148,7 @@ export default class implements DiscordEvent {
                 messageReactionRequest: {
                     user: user,
                     message: message
-                }
+                },
             });
 
         } else if (reaction.emoji.name === '✅') {
@@ -145,7 +158,7 @@ export default class implements DiscordEvent {
                 messageReactionRequest: {
                     user: user,
                     message: message
-                }
+                },
             });
 
         } else if (reaction.emoji.name === '🆘') {

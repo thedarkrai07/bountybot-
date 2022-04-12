@@ -4,6 +4,11 @@ import { SlashCreator, GatewayServer, SlashCommand, CommandContext } from 'slash
 import path from 'path';
 import fs from 'fs';
 import Log from './utils/Log';
+import mongo, { ChangeStreamOptions, Db, ChangeEvent } from 'mongodb';
+import MongoDbUtils from './utils/MongoDbUtils';
+import { ClientSync } from './clientSync/ClientSync';
+import { ChangeStreamEvent } from './types/mongo/ChangeStream';
+import { BountyCollection } from './types/bounty/BountyCollection';
 
 new Log();
 
@@ -69,5 +74,36 @@ client.once('ready', () => {
 
 // Login to Discord with your client's token
 client.login(process.env.DISCORD_BOT_TOKEN);
+
+// Listen to db sync events
+async function dbSyncListener(): Promise<void> {
+const db: Db = await MongoDbUtils.connect('bountyboard');
+const collection = db.collection("bounties");
+const changeStreamOptions: ChangeStreamOptions = { fullDocument: "updateLookup" };
+// This could be any pipeline.
+const pipeline = [];
+
+// const changeStream = collection.watch(pipeline, changeStreamOptions);
+const changeStream = collection.watch();
+
+// set up a listener when change events are emitted
+changeStream.on("change", async next => {
+	// note: passes updated fields
+	let changeEvent = next as ChangeEvent<BountyCollection> as ChangeStreamEvent;
+
+	// Note: for insert operation, fullDocument is populated instead of updatedFields
+	if (! ("insert" === changeEvent.operationType) ) {
+		const upsertedBountyRecord: BountyCollection = await collection.findOne({
+			_id: new mongo.ObjectId(changeEvent.documentKey._id),
+		});
+		changeEvent.fullDocument = upsertedBountyRecord;
+	}
+
+	ClientSync({ changeStreamEvent: changeEvent });
+	});
+}
+
+dbSyncListener();
+
 
 export default client;
