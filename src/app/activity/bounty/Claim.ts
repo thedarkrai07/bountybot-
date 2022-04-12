@@ -28,7 +28,7 @@ export const claimBounty = async (request: ClaimRequest): Promise<any> => {
     }
 
     // If we are dealing with a multi-claimant, make sure child card goes in correct channel
-    const parentBountyChannel = !!parentBounty ? await DiscordUtils.getTextChannelfromChannelId(parentBounty.canonicalCard.channelId) : undefined;
+    const parentBountyChannel = !!parentBounty.canonicalCard ? await DiscordUtils.getTextChannelfromChannelId(parentBounty.canonicalCard.channelId) : undefined;
     const claimedBountyCard = await BountyUtils.canonicalCard(claimedBounty._id, request.activity, parentBountyChannel);
 
     let creatorNotification = 
