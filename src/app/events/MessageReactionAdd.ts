@@ -44,7 +44,7 @@ export default class implements DiscordEvent {
         }
 
         if (reaction.message.author.id !== reaction.client.user.id) {
-            Log.info('Message Reaction Processing Stopped. Message author is not this bot');
+            // Log.info('Message Reaction Processing Stopped. Message author is not this bot');
             return;
         }
 
