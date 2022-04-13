@@ -24,12 +24,12 @@ export default class implements DiscordEvent {
     async execute(reaction: MessageReaction, user: User | PartialUser): Promise<any> {
         // When a reaction is received, check if the structure is partial
         if (reaction.partial) {
-            Log.info('Pulling full reaction from partial');
+            // Log.info('Pulling full reaction from partial');
             await reaction.fetch();
         }
 
         if (user.partial) {
-            Log.info('Pulling full user from partial');
+            // Log.info('Pulling full user from partial');
             try {
                 await user.fetch();
             } catch (error) {
@@ -39,7 +39,7 @@ export default class implements DiscordEvent {
         }
 
         if (user.bot) {
-            Log.info('Bot detected.');
+            // Log.info('Bot detected.');
             return;
         }
 
