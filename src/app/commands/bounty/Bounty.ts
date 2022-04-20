@@ -168,19 +168,6 @@ export default class Bounty extends SlashCommand {
                     ],
                 },
                 {
-                    name: Activities.apply,
-                    type: CommandOptionType.SUB_COMMAND,
-                    description: 'Apply for a bounty',
-                    options: [
-                        {
-                            name: 'bounty-id',
-                            type: CommandOptionType.STRING,
-                            description: 'Bounty ID',
-                            required: true,
-                        },
-                    ],
-                },
-                {
                     name: Activities.tag,
                     type: CommandOptionType.SUB_COMMAND,
                     description: 'Tag this bounty. Useful to group similar bounties for csv payments.',
@@ -195,25 +182,6 @@ export default class Bounty extends SlashCommand {
                             name: 'tag',
                             type: CommandOptionType.STRING,
                             description: 'Tag (i.e. \'Note Taking: January\' ',
-                            required: true,
-                        },
-                    ],
-                },
-                {
-                    name: Activities.assign,
-                    type: CommandOptionType.SUB_COMMAND,
-                    description: 'Assign a bounty as claimable by a user',
-                    options: [
-                        {
-                            name: 'bounty-id',
-                            type: CommandOptionType.STRING,
-                            description: 'Bounty ID',
-                            required: true,
-                        },
-                        {
-                            name: 'assign-to',
-                            type: CommandOptionType.USER,
-                            description: 'Assigned User',
                             required: true,
                         },
                     ],
