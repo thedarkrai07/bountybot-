@@ -1,6 +1,6 @@
 import ValidationError from '../errors/ValidationError';
 import Log, { LogUtils } from './Log';
-import { Role, Message, MessageOptions, TextChannel } from 'discord.js';
+import { Role, Message, MessageOptions, TextChannel, AwaitMessagesOptions, DMChannel } from 'discord.js';
 import DiscordUtils from '../utils/DiscordUtils';
 import { URL } from 'url';
 import { BountyCollection } from '../types/bounty/BountyCollection';
@@ -12,6 +12,8 @@ import mongo, { Db, UpdateWriteOpResult } from 'mongodb';
 import MongoDbUtils  from '../utils/MongoDbUtils';
 import { Activities } from '../constants/activities';
 import { CustomerCollection } from '../types/bounty/CustomerCollection';
+import { UpsertUserWalletRequest } from '../requests/UpsertUserWalletRequest';
+import { handler } from '../activity/bounty/Handler';
 
 
 const BountyUtils = {
@@ -469,7 +471,45 @@ const BountyUtils = {
                     },
             },
         });
-    }
+    },
+
+    async userInputWalletAddress(dmChannel: DMChannel, userId: string): Promise<any> {
+        const replyOptions: AwaitMessagesOptions = {
+            max: 1,
+            // time is in ms
+            time: 120000,
+            errors: ['time'],
+        };
+        
+        let numAttempts = 3;
+        let walletAddress = '';
+        while (numAttempts > 0) {
+            walletAddress = await DiscordUtils.awaitUserWalletDM(dmChannel, replyOptions);
+            try {
+                const upsertWalletRequest = new UpsertUserWalletRequest({
+                    userDiscordId: userId,
+                    address: walletAddress,
+                })
+    
+                await handler(upsertWalletRequest);
+                break;
+            } catch (e) {
+                if (e instanceof ValidationError) {
+                    await dmChannel.send({ content: `<@${userId}>\n` + e.message })
+                    numAttempts--;
+                }
+            }
+        }
+    
+        if (numAttempts === 0) {
+            await dmChannel.send({ content: 'Unable to claim this bounty. Please try entering your wallet address with the slash command `/register wallet`' });
+        }
+        else {
+            await dmChannel.send(
+                `Wallet address ${walletAddress} successfully registered.\n` +
+                `Bounty creators will default to using this address when fulfilling transactions for completed bounties.`);
+        }
+    },
 }
 
 export default BountyUtils;
