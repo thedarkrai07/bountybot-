@@ -107,6 +107,34 @@ const DiscordUtils = {
 		return messageText;
 	},
 
+    async awaitUserWalletDM(dmChannel: DMChannel, replyOptions: AwaitMessagesOptions): Promise<string> {
+        let messages: Collection<Snowflake, Message> = null;
+        try {
+         messages = await dmChannel.awaitMessages(replyOptions);
+         // TODO: this is too broad
+         } catch (e) {
+             throw new ValidationError(
+                 'You have timed out!\nPlease retry claiming this bounty.\n' +
+                 'You can also run `/register wallet` to register your wallet address.\n' +
+                 'Please do so to help the bounty creator reward you for this bounty.\n' +
+                 'Reach out to your favorite Bounty Board representative with any questions.\n'
+             );
+        }
+        const message = messages.first();
+		const messageText = message.content;
+
+		if(message.author.bot) {
+			throw new ValidationError(
+				'Detected bot response to last message! The previous operation has been discarded.\n' +
+				'Currently, you can only run one Bounty command at once.\n' +
+				'Be sure to check your DMs for any messages from Bountybot.\n' +
+				'Please reach out to your favorite Bounty Board representative with any questions.\n',
+			);
+		}
+
+		return messageText;
+	},
+
     // TODO: graceful timeout handling needed
     async awaitUser(channel: TextChannel, replyOptions: AwaitMessagesOptions): Promise<Message> {
         let messages: Collection<Snowflake, Message> = null;
