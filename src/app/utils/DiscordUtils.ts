@@ -116,7 +116,7 @@ const DiscordUtils = {
              throw new ValidationError(
                  'You have timed out!\nPlease retry claiming this bounty.\n' +
                  'You can also run `/register wallet` to register your wallet address.\n' +
-                 'Please to do so to help the bounty creator reward you for this bounty.\n' +
+                 'Please do so to help the bounty creator reward you for this bounty.\n' +
                  'Reach out to your favorite Bounty Board representative with any questions.\n'
              );
         }

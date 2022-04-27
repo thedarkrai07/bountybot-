@@ -1,4 +1,4 @@
-import { GuildMember, Message, DMChannel, AwaitMessagesOptions } from 'discord.js';
+import { GuildMember, Message, DMChannel } from 'discord.js';
 import { ClaimRequest } from '../../requests/ClaimRequest';
 import { BountyCollection } from '../../types/bounty/BountyCollection';
 import DiscordUtils from '../../utils/DiscordUtils';
@@ -10,12 +10,6 @@ import { BountyStatus } from '../../constants/bountyStatus';
 import BountyUtils from '../../utils/BountyUtils';
 import { Activities } from '../../constants/activities';
 import { Clients } from '../../constants/clients';
-import { CommandContext } from 'slash-create';
-import ValidationError from '../../errors/ValidationError';
-import WalletUtils from '../../utils/WalletUtils';
-import { UpsertUserWalletRequest } from '../../requests/UpsertUserWalletRequest';
-import { Request } from '../../requests/Request';
-import { handler } from './Handler';
 import { UserCollection } from '../../types/user/UserCollection';
 
 export const claimBounty = async (request: ClaimRequest): Promise<any> => {
@@ -32,11 +26,11 @@ export const claimBounty = async (request: ClaimRequest): Promise<any> => {
     
         const claimWalletMessage = `Hello <@${request.userId}>!\n` +
             `Please respond within 2 minutes.\n` +
-            `Please enter the ethereum wallet address (non-ENS) to receive the reward amount for this bounty`;
+            `To claim this bounty, please enter the ethereum wallet address (non-ENS) to receive the reward amount for this bounty`;
         const walletNeededMessage: Message = await claimedByUser.send({ content: claimWalletMessage });
         const dmChannel: DMChannel = await walletNeededMessage.channel.fetch() as DMChannel;
     
-        await BountyUtils.userInputWalletAddress(dmChannel, request.userId);
+        await BountyUtils.userInputWalletAddress(dmChannel, request.userId, request.guildId);
     }
 
     let getDbResult: {dbBountyResult: BountyCollection, bountyChannel: string} = await getDbHandler(request);

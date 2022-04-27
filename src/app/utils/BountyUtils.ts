@@ -473,7 +473,7 @@ const BountyUtils = {
         });
     },
 
-    async userInputWalletAddress(dmChannel: DMChannel, userId: string): Promise<any> {
+    async userInputWalletAddress(dmChannel: DMChannel, userId: string, customerId: string): Promise<any> {
         const replyOptions: AwaitMessagesOptions = {
             max: 1,
             // time is in ms
@@ -495,14 +495,24 @@ const BountyUtils = {
                 break;
             } catch (e) {
                 if (e instanceof ValidationError) {
-                    await dmChannel.send({ content: `<@${userId}>\n` + e.message })
+                    if (numAttempts > 1) {
+                        await dmChannel.send({ content: `<@${userId}>\n` + e.message });
+                    }
                     numAttempts--;
                 }
             }
         }
     
         if (numAttempts === 0) {
-            await dmChannel.send({ content: 'Unable to claim this bounty. Please try entering your wallet address with the slash command `/register wallet`' });
+            const db: Db = await MongoDbUtils.connect('bountyboard');
+            const customerCollection = db.collection('customers');
+            const customer: CustomerCollection = await customerCollection.findOne({
+                customerId: customerId,
+            });
+            throw new ValidationError(
+                'Unable to claim this bounty.\n' +
+                'Please try entering your wallet address with the slash command `/register wallet` and then try claiming the bounty again.\n\n' +
+                'Return to Bounty list: ' + customer.lastListMessage);
         }
         else {
             await dmChannel.send(
