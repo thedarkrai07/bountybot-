@@ -9,6 +9,7 @@ import { Db } from 'mongodb';
 import { CustomerCollection } from '../types/bounty/CustomerCollection';
 import { CommandContext } from 'slash-create';
 import { BountyCollection } from '../types/bounty/BountyCollection';
+import TimeoutError from '../errors/TimeoutError';
 
 
 
@@ -113,12 +114,7 @@ const DiscordUtils = {
          messages = await dmChannel.awaitMessages(replyOptions);
          // TODO: this is too broad
          } catch (e) {
-             throw new ValidationError(
-                 'You have timed out!\nPlease retry claiming this bounty.\n' +
-                 'You can also run `/register wallet` to register your wallet address.\n' +
-                 'Please do so to help the bounty creator reward you for this bounty.\n' +
-                 'Reach out to your favorite Bounty Board representative with any questions.\n'
-             );
+             throw new TimeoutError('awaitUserWalletDM');
         }
         const message = messages.first();
 		const messageText = message.content;
