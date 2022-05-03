@@ -12,6 +12,7 @@ import { Activities } from '../../constants/activities';
 import { Clients } from '../../constants/clients';
 import { UserCollection } from '../../types/user/UserCollection';
 import ValidationError from '../../errors/ValidationError';
+import TimeoutError from '../../errors/TimeoutError';
 
 export const claimBounty = async (request: ClaimRequest): Promise<any> => {
     Log.debug('In Claim activity');
@@ -32,12 +33,17 @@ export const claimBounty = async (request: ClaimRequest): Promise<any> => {
         const walletNeededMessage: Message = await claimedByUser.send({ content: claimWalletMessage });
         const dmChannel: DMChannel = await walletNeededMessage.channel.fetch() as DMChannel;
         
-        if (! (await BountyUtils.userInputWalletAddress(dmChannel, request.userId, durationMinutes*60*1000))) {
-            throw new ValidationError(                
-            `Unable to complete this operation.\n` +
-            'Please try entering your wallet address with the slash command `/register wallet` and then try claiming the bounty again.\n\n' +
-            `Return to Bounty list: ${(await BountyUtils.getLatestCustomerList(request.guildId))}`
-            );
+        try {
+            await BountyUtils.userInputWalletAddress(dmChannel, request.userId, durationMinutes*60*1000);
+        }
+        catch (e) {
+            if (e instanceof TimeoutError || e instanceof ValidationError) {
+                throw new ValidationError(                
+                    `Unable to complete this operation.\n` +
+                    'Please try entering your wallet address with the slash command `/register wallet` and then try claiming the bounty again.\n\n' +
+                    `Return to Bounty list: ${(await BountyUtils.getLatestCustomerList(request.guildId))}`
+                    );
+            }
         }
     }
 

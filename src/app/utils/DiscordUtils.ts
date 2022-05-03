@@ -10,6 +10,7 @@ import { CustomerCollection } from '../types/bounty/CustomerCollection';
 import { CommandContext } from 'slash-create';
 import { BountyCollection } from '../types/bounty/BountyCollection';
 import TimeoutError from '../errors/TimeoutError';
+import ConflictingMessageException from '../errors/ConflictingMessageException';
 
 
 
@@ -111,21 +112,22 @@ const DiscordUtils = {
     async awaitUserWalletDM(dmChannel: DMChannel, replyOptions: AwaitMessagesOptions): Promise<string> {
         let messages: Collection<Snowflake, Message> = null;
         try {
-         messages = await dmChannel.awaitMessages(replyOptions);
+            messages = await dmChannel.awaitMessages(replyOptions);
          // TODO: this is too broad
-         } catch (e) {
-             throw new TimeoutError('awaitUserWalletDM');
+        } 
+        catch (e) {
+            throw new TimeoutError('awaitUserWalletDM');
         }
         const message = messages.first();
 		const messageText = message.content;
 
-		if(message.author.bot) {
-			throw new ValidationError(
-				'Detected bot response to last message! The previous operation has been discarded.\n' +
-				'Currently, you can only run one Bounty command at once.\n' +
+		if (message.author.bot) {
+			throw new ConflictingMessageException(
+                'Detected bot response to last message! The previous bounty has been discarded.\n' +
+				'Currently, you can only run one Bounty create command at once.\n' +
 				'Be sure to check your DMs for any messages from Bountybot.\n' +
 				'Please reach out to your favorite Bounty Board representative with any questions.\n',
-			);
+            );
 		}
 
 		return messageText;

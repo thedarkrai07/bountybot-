@@ -11,6 +11,8 @@ import { BountyStatus } from '../../constants/bountyStatus';
 import { Clients } from '../../constants/clients';
 import { PaidStatus } from '../../constants/paidStatus';
 import { Activities } from '../../constants/activities';
+import TimeoutError from '../../errors/TimeoutError';
+import ConflictingMessageException from '../../errors/ConflictingMessageException';
 
 export const createBounty = async (createRequest: CreateRequest): Promise<any> => {
     Log.debug('In Create activity');
@@ -130,12 +132,23 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
             const dmChannel: DMChannel = await walletNeededMessage.channel.fetch() as DMChannel;
             
             await createRequest.commandContext.send({content: `Waiting for <@${owedTo.id}> to enter their wallet address.`, ephemeral: true});
-            if (! (await BountyUtils.userInputWalletAddress(dmChannel, createRequest.userId, durationMinutes*60*1000))) {
-                owedTo.send(
-                `Unable to complete this operation due to timeout or incorrect wallet addresses.\n` +
-                'Please try entering your wallet address with the slash command `/register wallet`.\n\n' +
-                `Return to Bounty list: ${(await BountyUtils.getLatestCustomerList(createRequest.guildId))}`
-                );
+
+            try {
+                await BountyUtils.userInputWalletAddress(dmChannel, createRequest.userId, durationMinutes*60*1000);
+                await createRequest.commandContext.delete();
+            }
+            catch (e) {
+                if (e instanceof TimeoutError) {
+                    await owedTo.send(
+                        `Unable to complete this operation due to timeout or incorrect wallet addresses.\n` +
+                        'Please try entering your wallet address with the slash command `/register wallet`.\n\n' +
+                        `Return to Bounty list: ${(await BountyUtils.getLatestCustomerList(createRequest.guildId))}`
+                        );
+                    await createRequest.commandContext.delete();
+                }
+                if (e instanceof ConflictingMessageException) {
+                    await walletNeededMessage.delete();
+                }
             }
         }
     } else {
@@ -148,8 +161,6 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
 
         return;
     }
-
-    await createRequest.commandContext.delete();  // All done
 }
 
 const createDbHandler = async (

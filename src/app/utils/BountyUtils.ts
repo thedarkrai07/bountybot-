@@ -16,6 +16,7 @@ import { UpsertUserWalletRequest } from '../requests/UpsertUserWalletRequest';
 import { handler } from '../activity/bounty/Handler';
 import { UserCollection } from '../types/user/UserCollection';
 import TimeoutError from '../errors/TimeoutError';
+import ConflictingMessageException from '../errors/ConflictingMessageException';
 
 
 const BountyUtils = {
@@ -486,19 +487,7 @@ const BountyUtils = {
         let numAttempts = 3;
         let walletAddress = '';
         while (numAttempts > 0) {
-            try {
-            // Normally, I would want to avoid this. Try/catch surrounding everything is an anti-pattern.
-            // However, based on the activity calling this method, our error handling needs to do different things
             walletAddress = await DiscordUtils.awaitUserWalletDM(dmChannel, replyOptions);
-            }
-            catch (e) {
-                if (e instanceof TimeoutError) {
-                    return false;
-                }
-                else if (e instanceof ValidationError) {
-                    throw new ValidationError(e.message);
-                }
-            }
             try {
                 const upsertWalletRequest = new UpsertUserWalletRequest({
                     userDiscordId: userId,
@@ -518,7 +507,7 @@ const BountyUtils = {
         }
     
         if (numAttempts === 0) {
-            return false;
+            throw new ValidationError('Out of valid user input attempts.');
         }
         else {
             await dmChannel.send(
