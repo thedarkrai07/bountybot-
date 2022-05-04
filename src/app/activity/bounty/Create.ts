@@ -19,8 +19,6 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
 
     const guildAndMember = await DiscordUtils.getGuildAndMember(createRequest.guildId, createRequest.userId);
     const guildMember: GuildMember = guildAndMember.guildMember;
-    const guildId: string = guildAndMember.guild.id;
-    const commandChannel = DiscordUtils.getTextChannelfromChannelId(createRequest.commandContext.channelID);
 
     let newBounty: Bounty;
 
@@ -138,13 +136,18 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
                 await createRequest.commandContext.delete();
             }
             catch (e) {
-                if (e instanceof TimeoutError) {
+                if (e instanceof TimeoutError || e instanceof ValidationError) {
                     await owedTo.send(
                         `Unable to complete this operation due to timeout or incorrect wallet addresses.\n` +
                         'Please try entering your wallet address with the slash command `/register wallet`.\n\n' +
                         `Return to Bounty list: ${(await BountyUtils.getLatestCustomerList(createRequest.guildId))}`
                         );
-                    await createRequest.commandContext.delete();
+                    await createRequest.commandContext.editOriginal({content: 
+                        `<@${createRequest.userId}>:\n` +
+                        `<@${owedTo.id}> was unable to enter their wallet address.\n` + 
+                        `Collecting wallet addresses of contributors can take up to a few days.\n` +
+                        `To facilitate ease of payment when this bounty is completed, please remind <@${owedTo.id}> ` +
+                        'to register their wallet address with the slash command `/register wallet`\n'});
                 }
                 if (e instanceof ConflictingMessageException) {
                     await walletNeededMessage.delete();
