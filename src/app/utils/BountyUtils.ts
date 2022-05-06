@@ -14,6 +14,7 @@ import { Activities } from '../constants/activities';
 import { CustomerCollection } from '../types/bounty/CustomerCollection';
 import { UpsertUserWalletRequest } from '../requests/UpsertUserWalletRequest';
 import { handler } from '../activity/bounty/Handler';
+import { UserCollection } from '../types/user/UserCollection';
 
 
 const BountyUtils = {
@@ -473,11 +474,11 @@ const BountyUtils = {
         });
     },
 
-    async userInputWalletAddress(dmChannel: DMChannel, userId: string, customerId: string): Promise<any> {
+    async userInputWalletAddress(dmChannel: DMChannel, userId: string, durationMilliseconds: number): Promise<boolean> {
         const replyOptions: AwaitMessagesOptions = {
             max: 1,
             // time is in ms
-            time: 120000,
+            time: durationMilliseconds,
             errors: ['time'],
         };
         
@@ -504,22 +505,38 @@ const BountyUtils = {
         }
     
         if (numAttempts === 0) {
-            const db: Db = await MongoDbUtils.connect('bountyboard');
-            const customerCollection = db.collection('customers');
-            const customer: CustomerCollection = await customerCollection.findOne({
-                customerId: customerId,
-            });
-            throw new ValidationError(
-                'Unable to claim this bounty.\n' +
-                'Please try entering your wallet address with the slash command `/register wallet` and then try claiming the bounty again.\n\n' +
-                'Return to Bounty list: ' + customer.lastListMessage);
+            throw new ValidationError('Out of valid user input attempts.');
         }
         else {
             await dmChannel.send(
                 `Wallet address ${walletAddress} successfully registered.\n` +
                 `Bounty creators will default to using this address when fulfilling transactions for completed bounties.`);
         }
+
+        return true;
     },
+
+    async isUserWalletRegistered(discordUserId: string): Promise<boolean> {
+        const db: Db = await MongoDbUtils.connect('bountyboard');
+        const userCollection = db.collection('user');
+    
+        const dbUserResult: UserCollection = await userCollection.findOne({
+            userDiscordId: discordUserId
+        });
+    
+        if (dbUserResult && dbUserResult.walletAddress) return true;
+        return false;
+    },
+
+    async getLatestCustomerList(customerId: string): Promise<string> {
+        const db: Db = await MongoDbUtils.connect('bountyboard');
+        const customerCollection = db.collection('customers');
+        const customer: CustomerCollection = await customerCollection.findOne({
+            customerId: customerId,
+        });
+
+        return customer.lastListMessage;
+    }
 }
 
 export default BountyUtils;

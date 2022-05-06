@@ -11,14 +11,14 @@ import { BountyStatus } from '../../constants/bountyStatus';
 import { Clients } from '../../constants/clients';
 import { PaidStatus } from '../../constants/paidStatus';
 import { Activities } from '../../constants/activities';
+import TimeoutError from '../../errors/TimeoutError';
+import ConflictingMessageException from '../../errors/ConflictingMessageException';
 
 export const createBounty = async (createRequest: CreateRequest): Promise<any> => {
     Log.debug('In Create activity');
 
     const guildAndMember = await DiscordUtils.getGuildAndMember(createRequest.guildId, createRequest.userId);
     const guildMember: GuildMember = guildAndMember.guildMember;
-    const guildId: string = guildAndMember.guild.id;
-    const commandChannel = DiscordUtils.getTextChannelfromChannelId(createRequest.commandContext.channelID);
 
     let newBounty: Bounty;
 
@@ -116,7 +116,44 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
 
     if (createRequest.isIOU) {
         // await createRequest.commandContext.sendFollowUp({ content: "Your IOU was created." } , { ephemeral: true });
-        await owedTo.send({ content: `An IOU was created for you by <@${guildMember.user.id}>: ${cardMessage.url}`});
+        await owedTo.send({ content: `<@${owedTo.id}> An IOU was created for you by <@${guildMember.user.id}>: ${cardMessage.url}`});
+
+        if (! (await BountyUtils.isUserWalletRegistered(owedTo.id))) {
+            // Note: ephemeral messagees are only visible to the user who kicked off the interaction,
+            // so we can not send an ephemeral message to the owedTo user to check DMs
+            
+            const durationMinutes = 5;
+            const iouWalletMessage = `Hello <@${owedTo.id}>!\n` +
+                `Please respond within ${durationMinutes} minutes.\n` +
+                `Please enter the ethereum wallet address (non-ENS) to receive the reward amount for this bounty`;
+            const walletNeededMessage: Message = await owedTo.send({ content: iouWalletMessage });
+            const dmChannel: DMChannel = await walletNeededMessage.channel.fetch() as DMChannel;
+            
+            await createRequest.commandContext.send({content: `Waiting for <@${owedTo.id}> to enter their wallet address.`, ephemeral: true});
+
+            try {
+                await BountyUtils.userInputWalletAddress(dmChannel, owedTo.id, durationMinutes*60*1000);
+                await createRequest.commandContext.delete();
+            }
+            catch (e) {
+                if (e instanceof TimeoutError || e instanceof ValidationError) {
+                    await owedTo.send(
+                        `Unable to complete this operation due to timeout or incorrect wallet addresses.\n` +
+                        'Please try entering your wallet address with the slash command `/register wallet`.\n\n' +
+                        `Return to Bounty list: ${(await BountyUtils.getLatestCustomerList(createRequest.guildId))}`
+                        );
+                    await createRequest.commandContext.editOriginal({content: 
+                        `<@${createRequest.userId}>:\n` +
+                        `<@${owedTo.id}> was unable to enter their wallet address.\n` + 
+                        `Collecting wallet addresses of contributors can take up to a few days.\n` +
+                        `To facilitate ease of payment when this bounty is completed, please remind <@${owedTo.id}> ` +
+                        'to register their wallet address with the slash command `/register wallet`\n'});
+                }
+                if (e instanceof ConflictingMessageException) {
+                    await walletNeededMessage.delete();
+                }
+            }
+        }
     } else {
 
         const publishOrDeleteMessage = 
@@ -127,8 +164,6 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
 
         return;
     }
-
-    await createRequest.commandContext.delete();  // All done
 }
 
 const createDbHandler = async (
