@@ -132,7 +132,7 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
             await createRequest.commandContext.send({content: `Waiting for <@${owedTo.id}> to enter their wallet address.`, ephemeral: true});
 
             try {
-                await BountyUtils.userInputWalletAddress(dmChannel, createRequest.userId, durationMinutes*60*1000);
+                await BountyUtils.userInputWalletAddress(dmChannel, owedTo.id, durationMinutes*60*1000);
                 await createRequest.commandContext.delete();
             }
             catch (e) {

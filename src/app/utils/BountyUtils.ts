@@ -15,8 +15,6 @@ import { CustomerCollection } from '../types/bounty/CustomerCollection';
 import { UpsertUserWalletRequest } from '../requests/UpsertUserWalletRequest';
 import { handler } from '../activity/bounty/Handler';
 import { UserCollection } from '../types/user/UserCollection';
-import TimeoutError from '../errors/TimeoutError';
-import ConflictingMessageException from '../errors/ConflictingMessageException';
 
 
 const BountyUtils = {

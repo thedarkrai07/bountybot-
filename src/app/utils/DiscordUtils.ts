@@ -8,7 +8,6 @@ import MongoDbUtils  from '../utils/MongoDbUtils';
 import { Db } from 'mongodb';
 import { CustomerCollection } from '../types/bounty/CustomerCollection';
 import { CommandContext } from 'slash-create';
-import { BountyCollection } from '../types/bounty/BountyCollection';
 import TimeoutError from '../errors/TimeoutError';
 import ConflictingMessageException from '../errors/ConflictingMessageException';
 
