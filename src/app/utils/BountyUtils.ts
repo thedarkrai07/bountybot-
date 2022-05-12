@@ -257,7 +257,7 @@ const BountyUtils = {
             title += `\n(For role ${role.name})`;
         } else if (bountyRecord.isIOU) {
             title += `\n(IOU owed to ${bountyRecord.claimedBy.discordHandle})`;
-        } else {    
+        } else {
             if (bountyRecord.requireApplication) {
                 title += `\n(Requires application before claiming`;
                 if (bountyRecord.applicants) {
@@ -271,7 +271,7 @@ const BountyUtils = {
             }
         }
         return title;
-    
+
     },
 
     async canonicalCard(bountyId: string, activity: string, bountyChannel?: TextChannel): Promise<Message> {
@@ -305,7 +305,7 @@ const BountyUtils = {
             const assignedUser = await DiscordUtils.getGuildMemberFromUserId(bounty.assign, bounty.customerId);
             fields.push({ name: 'For user', value: assignedUser.user.tag, inline: false })
         }
-    
+
         let footer = {};
         let reacts = [];
         let color = undefined;
@@ -371,7 +371,7 @@ const BountyUtils = {
 
         const isDraftBounty = (bounty.status == BountyStatus.draft)
         const createdAt = new Date(bounty.createdAt);
-            let cardEmbeds: MessageOptions = {
+        let cardEmbeds: MessageOptions = {
             embeds: [{
                 title: await BountyUtils.createPublicTitle(bounty),
                 url: (process.env.BOUNTY_BOARD_URL + bounty._id),
@@ -419,7 +419,12 @@ const BountyUtils = {
                 await cardMessage.reactions.removeAll();
             } else {  // Otherwise create it. Put it in the passed in channel, or customer channel by default
                 if (!bountyChannel) bountyChannel = await DiscordUtils.getBountyChannelfromCustomerId(bounty.customerId);
-                cardMessage = await bountyChannel.send(cardEmbeds);
+                try {
+                    cardMessage = await bountyChannel.send(cardEmbeds);
+                } catch (e) {
+                    bountyChannel = await DiscordUtils.getBountyChannelfromCustomerId(bounty.customerId);
+                    cardMessage = await bountyChannel.send(cardEmbeds);
+                }
             }
         }
         reacts.forEach(react => {
@@ -430,7 +435,7 @@ const BountyUtils = {
         await this.updateMessageStore(bounty, cardMessage);
 
         return cardMessage;
-    
+
     },
 
     async notifyAndRemove(messageId: string, channel: TextChannel, cardUrl: string): Promise<any> {
@@ -456,7 +461,7 @@ const BountyUtils = {
         if (!!bounty.claimantMessage) {
             await this.notifyAndRemove(bounty.claimantMessage.messageId, await DiscordUtils.getTextChannelfromChannelId(bounty.claimantMessage.channelId), cardMessage.url);
         }
-            
+
         // Store the card location in the bounty, remove the old cards
         const db: Db = await MongoDbUtils.connect('bountyboard');
         const bountyCollection = db.collection('bounties');
@@ -467,9 +472,9 @@ const BountyUtils = {
                 discordMessageId: "",
             },
             $set: { canonicalCard: {
-                        messageId: cardMessage.id,
-                        channelId: cardMessage.channelId,
-                    },
+                    messageId: cardMessage.id,
+                    channelId: cardMessage.channelId,
+                },
             },
         });
     },
@@ -481,7 +486,7 @@ const BountyUtils = {
             time: durationMilliseconds,
             errors: ['time'],
         };
-        
+
         let numAttempts = 3;
         let walletAddress = '';
         while (numAttempts > 0) {
@@ -491,7 +496,7 @@ const BountyUtils = {
                     userDiscordId: userId,
                     address: walletAddress,
                 })
-    
+
                 await handler(upsertWalletRequest);
                 break;
             } catch (e) {
@@ -503,7 +508,7 @@ const BountyUtils = {
                 }
             }
         }
-    
+
         if (numAttempts === 0) {
             throw new ValidationError('Out of valid user input attempts.');
         }
@@ -519,11 +524,11 @@ const BountyUtils = {
     async isUserWalletRegistered(discordUserId: string): Promise<boolean> {
         const db: Db = await MongoDbUtils.connect('bountyboard');
         const userCollection = db.collection('user');
-    
+
         const dbUserResult: UserCollection = await userCollection.findOne({
             userDiscordId: discordUserId
         });
-    
+
         if (dbUserResult && dbUserResult.walletAddress) return true;
         return false;
     },
