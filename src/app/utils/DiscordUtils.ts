@@ -160,8 +160,8 @@ const DiscordUtils = {
             } catch (e) {
                 throw new AuthorizationError(
                     `Thank you for giving bounty commands a try!\n` +
-                    `It looks like you don't have permission to recieve messages from the bot.\n` +
-                    'Unable to send message. Please give bot permission to DM you and try again.'
+                    `It looks like bot does not have permission to DM you.\n` +
+                    'Please give bot permission to DM you and try again.'
                 )
             }
         }
@@ -174,7 +174,7 @@ const DiscordUtils = {
         } catch (e) {
             throw new AuthorizationError(
                 `Thank you for giving bounty commands a try!\n` +
-                `It looks like you don't have permission to recieve messages from the bot.\n` +
+                `It looks like bot does not have permission to DM you.\n` +
                 'Please give bot permission to DM you and try again.'
             )
         }
