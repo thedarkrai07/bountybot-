@@ -159,8 +159,7 @@ const DiscordUtils = {
                 await toUser.send(content);
             } catch (e) {
                 throw new AuthorizationError(
-                    'You are not authorized to send messages to this user.\n' +
-                    'Please give bot permission to DM you and try again.'
+                    'Unable to send message. Please give bot permission to DM you and try again.'
                 )
             }
         }
@@ -172,8 +171,7 @@ const DiscordUtils = {
             await toUser.send(content);
         } catch (e) {
             throw new AuthorizationError(
-                'You are not authorized to send messages to this user.\n' +
-                'Please give bot permission to DM you and try again.'
+                'Unable to send message. Please give bot permission to DM you and try again.'
             )
         }
     },
