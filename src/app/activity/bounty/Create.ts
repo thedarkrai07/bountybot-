@@ -11,6 +11,7 @@ import { BountyStatus } from '../../constants/bountyStatus';
 import { Clients } from '../../constants/clients';
 import { PaidStatus } from '../../constants/paidStatus';
 import { Activities } from '../../constants/activities';
+import AuthorizationError from '../../errors/AuthorizationError';
 
 export const createBounty = async (createRequest: CreateRequest): Promise<any> => {
     Log.debug('In Create activity');
@@ -32,7 +33,17 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
         const createInfoMessage = `Hello <@${guildMember.id}>!\n` +
             `Please respond to the following questions within 5 minutes.\n` +
             `Can you tell me a description of your bounty?`;
-        const workNeededMessage: Message = await guildMember.send({ content: createInfoMessage });
+            let workNeededMessage: Message;
+            try {
+                workNeededMessage = await guildMember.send({ content: createInfoMessage });
+            } catch (e) {
+                throw new AuthorizationError(
+                    `Thank you for giving bounty commands a try!\n` +
+                    `It looks like bot does not have permission to DM you.\n` +
+                    `Please give bot permission to DM you and try again.`
+                );
+            }
+
         const dmChannel: DMChannel = await workNeededMessage.channel.fetch() as DMChannel;
         const replyOptions: AwaitMessagesOptions = {
             max: 1,

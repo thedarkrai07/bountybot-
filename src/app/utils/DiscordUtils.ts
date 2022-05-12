@@ -9,6 +9,7 @@ import { Db } from 'mongodb';
 import { CustomerCollection } from '../types/bounty/CustomerCollection';
 import { CommandContext } from 'slash-create';
 import { BountyCollection } from '../types/bounty/BountyCollection';
+import AuthorizationError from '../errors/AuthorizationError';
 
 
 
@@ -157,13 +158,27 @@ const DiscordUtils = {
             await commandContext.send({ content: content, ephemeral: true });
             // await commandContext.delete();
         } else {  // This was a reaction or a DB event
-            await toUser.send(content);
+            try {
+                await toUser.send(content);
+            } catch (e) {
+                throw new AuthorizationError(
+                    'You are not authorized to send messages to this user.\n' +
+                    'Please give bot permission to DM you and try again.'
+                )
+            }
         }
     },
 
     // Send a notification to an interested party (use a DM)
     async activityNotification(content: string, toUser: GuildMember): Promise<void> {
-        await toUser.send(content);
+        try {
+            await toUser.send(content);
+        } catch (e) {
+            throw new AuthorizationError(
+                'You are not authorized to send messages to this user.\n' +
+                'Please give bot permission to DM you and try again.'
+            )
+        }
     },
     
 
