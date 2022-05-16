@@ -15,21 +15,21 @@ import { Clients } from '../../constants/clients';
 export const publishBounty = async (publishRequest: PublishRequest): Promise<any> => {
 	Log.debug('In Publish activity');
 
-    Log.info(`starting to finalize bounty: ${publishRequest.bountyId} from guild: ${publishRequest.guildId}`);
-    const bountyId = publishRequest.bountyId;
-    const guildId = publishRequest.guildId;
-    const { guildMember } = await DiscordUtils.getGuildAndMember(publishRequest.guildId, publishRequest.userId);
+	Log.info(`starting to finalize bounty: ${publishRequest.bountyId} from guild: ${publishRequest.guildId}`);
+	const bountyId = publishRequest.bountyId;
+	const guildId = publishRequest.guildId;
+	const { guildMember } = await DiscordUtils.getGuildAndMember(publishRequest.guildId, publishRequest.userId);
 
-    const [dbBountyResult, dbCustomerResult] = await getDbHandler(bountyId, guildId, publishRequest);
+	const [dbBountyResult, dbCustomerResult] = await getDbHandler(bountyId, guildId, publishRequest);
 
-    if (!publishRequest.clientSyncRequest) {
+	if (!publishRequest.clientSyncRequest) {
 		await writeDbHandler(dbBountyResult);
 	}
 
 	const bountyChannel: TextChannel = dbBountyResult.createdInChannel ? await DiscordUtils.getTextChannelfromChannelId(dbBountyResult.createdInChannel) :
-		 await guildMember.client.channels.fetch(dbCustomerResult.bountyChannel) as TextChannel;
-	const bountyMessage: Message = await BountyUtils.canonicalCard(dbBountyResult._id, publishRequest.activity, bountyChannel);
-    await guildMember.send({ content: `Bounty published to \`${(bountyMessage.channel as any).name || bountyChannel.name}\` <${bountyMessage.url}> and the website! <${process.env.BOUNTY_BOARD_URL}${bountyId}>` });
+		await guildMember.client.channels.fetch(dbCustomerResult.bountyChannel) as TextChannel;
+	const bountyMessage: Message = await BountyUtils.canonicalCard(dbBountyResult._id, publishRequest.activity, bountyChannel, guildMember);
+	await guildMember.send({ content: `Bounty published to \`${(bountyMessage.channel as any).name || bountyChannel.name}\` <${bountyMessage.url}> and the website! <${process.env.BOUNTY_BOARD_URL}${bountyId}>` });
 	Log.info(`bounty published to ${(bountyMessage.channel as any).name || bountyChannel.name}`);
 
 	// Remove old publish preview
@@ -46,29 +46,29 @@ export const publishBounty = async (publishRequest: PublishRequest): Promise<any
 }
 
 const getDbHandler = async (bountyId: string, guildId: string, request: PublishRequest): Promise<[BountyCollection, CustomerCollection]> => {
-    Log.debug(`Entered get DbHandler for publish`);
-    const db: Db = await MongoDbUtils.connect('bountyboard');
+	Log.debug(`Entered get DbHandler for publish`);
+	const db: Db = await MongoDbUtils.connect('bountyboard');
 	const dbCollectionBounties = db.collection('bounties');
-    const dbCollectionCustomers = db.collection('customers');
+	const dbCollectionCustomers = db.collection('customers');
 
 	const status = request.clientSyncRequest ? 'Open' : 'Draft';
 
-    const dbCustomerResult: CustomerCollection = await dbCollectionCustomers.findOne({
+	const dbCustomerResult: CustomerCollection = await dbCollectionCustomers.findOne({
 		customerId: guildId
 	});
-    const dbBountyResult: BountyCollection = await dbCollectionBounties.findOne({
+	const dbBountyResult: BountyCollection = await dbCollectionBounties.findOne({
 		_id: new mongo.ObjectId(bountyId),
 		status: status,
 	});
 
-    return [dbBountyResult, dbCustomerResult];
+	return [dbBountyResult, dbCustomerResult];
 
 }
 
 const writeDbHandler = async (dbBountyResult: BountyCollection): Promise<any> => {
-    const db: Db = await MongoDbUtils.connect('bountyboard');
+	const db: Db = await MongoDbUtils.connect('bountyboard');
 	const dbCollectionBounties = db.collection('bounties');
-    const currentDate = (new Date()).toISOString();
+	const currentDate = (new Date()).toISOString();
 	const writeResult: UpdateWriteOpResult = await dbCollectionBounties.updateOne(dbBountyResult, {
 		$set: {
 			status: BountyStatus.open,

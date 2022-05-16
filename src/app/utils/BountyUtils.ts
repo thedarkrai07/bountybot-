@@ -1,6 +1,6 @@
 import ValidationError from '../errors/ValidationError';
 import Log, { LogUtils } from './Log';
-import { Role, Message, MessageOptions, TextChannel, AwaitMessagesOptions, DMChannel } from 'discord.js';
+import { Role, Message, MessageOptions, TextChannel, AwaitMessagesOptions, DMChannel, GuildMember } from 'discord.js';
 import DiscordUtils from '../utils/DiscordUtils';
 import { URL } from 'url';
 import { BountyCollection } from '../types/bounty/BountyCollection';
@@ -9,7 +9,7 @@ import { BountyStatus } from '../constants/bountyStatus';
 import { PaidStatus } from '../constants/paidStatus';
 import { CreateRequest } from '../requests/CreateRequest';
 import mongo, { Db, UpdateWriteOpResult } from 'mongodb';
-import MongoDbUtils  from '../utils/MongoDbUtils';
+import MongoDbUtils from '../utils/MongoDbUtils';
 import { Activities } from '../constants/activities';
 import { CustomerCollection } from '../types/bounty/CustomerCollection';
 import { UpsertUserWalletRequest } from '../requests/UpsertUserWalletRequest';
@@ -18,7 +18,7 @@ import { UserCollection } from '../types/user/UserCollection';
 
 
 const BountyUtils = {
-    TWENTYFOUR_HOURS_IN_SECONDS: 24*60*60,
+    TWENTYFOUR_HOURS_IN_SECONDS: 24 * 60 * 60,
 
     validateDescription(description: string): void {
         const CREATE_SUMMARY_REGEX = /^[\w\s\W]{1,4000}$/;
@@ -236,7 +236,7 @@ const BountyUtils = {
     isWithin24Hours(one: string, two: string): boolean {
         const dateOne: Date = new Date(one);
         const dateTwo: Date = new Date(two);
-        let elapsedSeconds = Math.abs( ( dateOne.getTime() - dateTwo.getTime() ) / 1000 );
+        let elapsedSeconds = Math.abs((dateOne.getTime() - dateTwo.getTime()) / 1000);
         return elapsedSeconds < BountyUtils.TWENTYFOUR_HOURS_IN_SECONDS;
     },
 
@@ -274,7 +274,7 @@ const BountyUtils = {
 
     },
 
-    async canonicalCard(bountyId: string, activity: string, bountyChannel?: TextChannel): Promise<Message> {
+    async canonicalCard(bountyId: string, activity: string, bountyChannel?: TextChannel, guildMember?: GuildMember): Promise<Message> {
         Log.debug(`Creating/updating canonical card`);
 
         // Get the updated bounty
@@ -377,7 +377,7 @@ const BountyUtils = {
                 url: (process.env.BOUNTY_BOARD_URL + bounty._id),
                 author: {
                     icon_url: (await DiscordUtils.getGuildMemberFromUserId(bounty.createdBy.discordId, bounty.customerId)).user.avatarURL(),
-                    name: `${bounty.createdBy.discordHandle}` + (isDraftBounty ? `: ${bounty.customerId}`: ``),
+                    name: `${bounty.createdBy.discordHandle}` + (isDraftBounty ? `: ${bounty.customerId}` : ``),
                 },
                 description: bounty.description,
                 fields: fields,
@@ -387,7 +387,7 @@ const BountyUtils = {
             }],
         };
         if (!isDraftBounty && !!customer.lastListMessage) {
-            cardEmbeds.components =  [{
+            cardEmbeds.components = [{
                 type: 1, //Action Row
                 components: [{
                     type: 2,
@@ -402,7 +402,7 @@ const BountyUtils = {
         let cardMessage: Message;
 
         if (isDraftBounty) {  // If we are in Create (Draft) mode, put the card in the DM channel
-            cardMessage = await ( await DiscordUtils.getGuildMemberFromUserId(bounty.createdBy.discordId, bounty.customerId)).send(cardEmbeds);
+            cardMessage = await (await DiscordUtils.getGuildMemberFromUserId(bounty.createdBy.discordId, bounty.customerId)).send(cardEmbeds);
         } else {
             if (activity == Activities.publish) {  // Publishing. If the card exists, delete it - it was in a DM}
                 if (!!bounty.canonicalCard) {
@@ -422,7 +422,17 @@ const BountyUtils = {
                 try {
                     cardMessage = await bountyChannel.send(cardEmbeds);
                 } catch (e) {
+                    guildMember &&
+                        await guildMember.send({
+                            content: `> Failed to publish bounty in **#${bountyChannel.name}**. \n` +
+                                `> Reason: ${e.message} \n` +
+                                `> Please add bot to **#${bountyChannel.name}** to publish is successfully. If issue persists, please contact support \n \n `
+                        });
+
                     bountyChannel = await DiscordUtils.getBountyChannelfromCustomerId(bounty.customerId);
+
+                    guildMember &&
+                        await guildMember.send({ content: `Trying to publish on **#${bountyChannel.name}** instead...\n \n ` });
                     cardMessage = await bountyChannel.send(cardEmbeds);
                 }
             }
@@ -471,7 +481,8 @@ const BountyUtils = {
                 creatorMessage: "",
                 discordMessageId: "",
             },
-            $set: { canonicalCard: {
+            $set: {
+                canonicalCard: {
                     messageId: cardMessage.id,
                     channelId: cardMessage.channelId,
                 },

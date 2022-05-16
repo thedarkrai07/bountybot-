@@ -63,7 +63,7 @@ export const claimBounty = async (request: ClaimRequest): Promise<any> => {
 
     let creatorNotification = 
     `Your bounty has been claimed by <@${claimedByUser.user.id}> <${claimedBountyCard.url}>\n` +
-    `You are free to complete this bounty and/or to mark it as paid at any time.\n` +
+    `You are free to mark this bounty as complete and/or paid at any time.\n` +
     `Marking a bounty as complete and/or paid may help you with accounting or project status tasks later on.`;
     if (getDbResult.dbBountyResult.evergreen) {
         const parentBountyUrl = process.env.BOUNTY_BOARD_URL + parentBounty._id;
@@ -77,7 +77,7 @@ export const claimBounty = async (request: ClaimRequest): Promise<any> => {
     }
 
     const createdByUser = await DiscordUtils.getGuildMemberFromUserId(getDbResult.dbBountyResult.createdBy.discordId, request.guildId);
-    await DiscordUtils.activityNotification(creatorNotification, createdByUser );
+    await DiscordUtils.activityNotification(creatorNotification, createdByUser,  request.bountyId );
 
     const claimaintResponse = `<@${claimedByUser.user.id}>, you have claimed this bounty! Reach out to <@${createdByUser.user.id}> with any questions: <${claimedBountyCard.url}>`;
     await DiscordUtils.activityResponse(request.commandContext, claimaintResponse , claimedByUser);
