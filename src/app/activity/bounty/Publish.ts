@@ -35,10 +35,7 @@ export const publishBounty = async (publishRequest: PublishRequest): Promise<any
 	// Remove old publish preview
 	if (dbBountyResult.creatorMessage !== undefined) {
 		const dmChannel = await guildMember.client.channels.fetch(dbBountyResult.creatorMessage.channelId) as TextChannel;
-		const previewMessage = await dmChannel.messages.fetch(dbBountyResult.creatorMessage.messageId).catch(e => {
-			LogUtils.logError(`could not find bounty ${dbBountyResult._id} in channel ${dmChannel.id} in guild ${guildId}`, e);
-			throw new RuntimeError(e);
-		});
+		const previewMessage = await dmChannel.messages.fetch(dbBountyResult.creatorMessage.messageId);
 		await previewMessage.delete();
 	}
 
