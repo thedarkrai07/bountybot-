@@ -18,7 +18,7 @@ const ErrorUtils = {
             embeds: [{
                 title: 'Bounty Notification',
                 fields: [{
-                    name: 'Owner',
+                    name: 'For User',
                     value: `<@${user.id}>`,
                 }, {
                     name: 'Message',

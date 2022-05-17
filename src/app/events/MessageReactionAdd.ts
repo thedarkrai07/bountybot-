@@ -225,7 +225,7 @@ export default class implements DiscordEvent {
             } else if (e instanceof NotificationPermissionError) {
                 await ErrorUtils.sendToDefaultChannel(e.message, request);
             } else if (e instanceof DMPermissionError) {
-                const message = `It looks like bot does not have permission to DM you.\n \n` +
+                const message = `It looks like bot does not have permission to DM <@${user.id}>.\n \n` +
                     '**Message** \n' +
                     e.message;
                 await reaction.message.channel.send({ content: message });
