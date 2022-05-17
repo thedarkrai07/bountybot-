@@ -14,6 +14,7 @@ import { Activities } from '../../constants/activities';
 import TimeoutError from '../../errors/TimeoutError';
 import ConflictingMessageException from '../../errors/ConflictingMessageException';
 import AuthorizationError from '../../errors/AuthorizationError';
+import DMPermissionError from '../../errors/DMPermissionError';
 
 export const createBounty = async (createRequest: CreateRequest): Promise<any> => {
     Log.debug('In Create activity');
@@ -28,21 +29,21 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
     if (!createRequest.isIOU) {
 
         const gotoDMMessage = 'Go to your DMs to finish creating the bounty...';
-        await createRequest.commandContext.send({ content: gotoDMMessage, ephemeral: true});
+        await createRequest.commandContext.send({ content: gotoDMMessage, ephemeral: true });
 
         const createInfoMessage = `Hello <@${guildMember.id}>!\n` +
             `Please respond to the following questions within 5 minutes.\n` +
             `Can you tell me a description of your bounty?`;
-            let workNeededMessage: Message;
-            try {
-                workNeededMessage = await guildMember.send({ content: createInfoMessage });
-            } catch (e) {
-                throw new AuthorizationError(
-                    `Thank you for giving bounty commands a try!\n` +
-                    `It looks like bot does not have permission to DM you.\n` +
-                    `Please give bot permission to DM you and try again.`
-                );
-            }
+        let workNeededMessage: Message;
+        try {
+            workNeededMessage = await guildMember.send({ content: createInfoMessage });
+        } catch (e) {
+            throw new AuthorizationError(
+                `Thank you for giving bounty commands a try!\n` +
+                `It looks like bot does not have permission to DM you.\n` +
+                `Please give bot permission to DM you and try again.`
+            );
+        }
 
         const dmChannel: DMChannel = await workNeededMessage.channel.fetch() as DMChannel;
         const replyOptions: AwaitMessagesOptions = {
@@ -76,13 +77,13 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
         do {
             // TODO: update default date to a reaction instead of text input
             // TODO: update hardcoded no/skip to a REGEX
-            const dueDateMessage = 
-                'When is the work for this bounty due by?\n' + 
+            const dueDateMessage =
+                'When is the work for this bounty due by?\n' +
                 'Please enter `UTC` date in format `yyyy-mm-dd`, i.e 2022-01-01`? (type \'no\' or \'skip\' for a default value of 3 months from today)';
-            await guildMember.send({ content:  dueDateMessage});
+            await guildMember.send({ content: dueDateMessage });
             const dueAtMessageText = await DiscordUtils.awaitUserDM(dmChannel, replyOptions);
 
-            if (! (dueAtMessageText.toLowerCase() === 'no' || dueAtMessageText.toLowerCase() === 'skip') ) {
+            if (!(dueAtMessageText.toLowerCase() === 'no' || dueAtMessageText.toLowerCase() === 'skip')) {
                 try {
                     convertedDueDateFromMessage = BountyUtils.validateDate(dueAtMessageText);
                 } catch (e) {
@@ -127,23 +128,24 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
 
     if (createRequest.isIOU) {
         // await createRequest.commandContext.sendFollowUp({ content: "Your IOU was created." } , { ephemeral: true });
-        await owedTo.send({ content: `<@${owedTo.id}> An IOU was created for you by <@${guildMember.user.id}>: ${cardMessage.url}`});
+        const IOUContent = `<@${owedTo.id}> An IOU was created for you by <@${guildMember.user.id}>: ${cardMessage.url}`;
+        await owedTo.send({ content: IOUContent }).catch(() => { throw new DMPermissionError(IOUContent) });
 
-        if (! (await BountyUtils.isUserWalletRegistered(owedTo.id))) {
+        if (!(await BountyUtils.isUserWalletRegistered(owedTo.id))) {
             // Note: ephemeral messagees are only visible to the user who kicked off the interaction,
             // so we can not send an ephemeral message to the owedTo user to check DMs
-            
+
             const durationMinutes = 5;
             const iouWalletMessage = `Hello <@${owedTo.id}>!\n` +
                 `Please respond within ${durationMinutes} minutes.\n` +
                 `Please enter the ethereum wallet address (non-ENS) to receive the reward amount for this bounty`;
             const walletNeededMessage: Message = await owedTo.send({ content: iouWalletMessage });
             const dmChannel: DMChannel = await walletNeededMessage.channel.fetch() as DMChannel;
-            
-            await createRequest.commandContext.send({content: `Waiting for <@${owedTo.id}> to enter their wallet address.`, ephemeral: true});
+
+            await createRequest.commandContext.send({ content: `Waiting for <@${owedTo.id}> to enter their wallet address.`, ephemeral: true });
 
             try {
-                await BountyUtils.userInputWalletAddress(dmChannel, owedTo.id, durationMinutes*60*1000);
+                await BountyUtils.userInputWalletAddress(dmChannel, owedTo.id, durationMinutes * 60 * 1000);
                 await createRequest.commandContext.delete();
             }
             catch (e) {
@@ -152,13 +154,15 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
                         `Unable to complete this operation due to timeout or incorrect wallet addresses.\n` +
                         'Please try entering your wallet address with the slash command `/register wallet`.\n\n' +
                         `Return to Bounty list: ${(await BountyUtils.getLatestCustomerList(createRequest.guildId))}`
-                        );
-                    await createRequest.commandContext.editOriginal({content: 
-                        `<@${createRequest.userId}>:\n` +
-                        `<@${owedTo.id}> was unable to enter their wallet address.\n` + 
-                        `Collecting wallet addresses of contributors can take up to a few days.\n` +
-                        `To facilitate ease of payment when this bounty is completed, please remind <@${owedTo.id}> ` +
-                        'to register their wallet address with the slash command `/register wallet`\n'});
+                    );
+                    await createRequest.commandContext.editOriginal({
+                        content:
+                            `<@${createRequest.userId}>:\n` +
+                            `<@${owedTo.id}> was unable to enter their wallet address.\n` +
+                            `Collecting wallet addresses of contributors can take up to a few days.\n` +
+                            `To facilitate ease of payment when this bounty is completed, please remind <@${owedTo.id}> ` +
+                            'to register their wallet address with the slash command `/register wallet`\n'
+                    });
                 }
                 if (e instanceof ConflictingMessageException) {
                     await walletNeededMessage.delete();
@@ -167,7 +171,7 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
         }
     } else {
 
-        const publishOrDeleteMessage = 
+        const publishOrDeleteMessage =
             'Thank you! If it looks good, please hit 👍 to publish the bounty.\n' +
             'Once the bounty has been published, others can view and claim the bounty.\n' +
             'If you are not happy with the bounty, hit ❌ to delete it and start over.\n'
@@ -194,14 +198,14 @@ const createDbHandler = async (
     }
 
     const createdBounty: Bounty = generateBountyRecord(
-            createRequest,
-            description,
-            criteria,
-            dueAt,
-            guildMember,
-            owedTo,
-            createdInChannel);
-    
+        createRequest,
+        description,
+        criteria,
+        dueAt,
+        guildMember,
+        owedTo,
+        createdInChannel);
+
 
     const dbInsertResult = await dbBounty.insertOne(createdBounty);
     if (dbInsertResult == null) {
