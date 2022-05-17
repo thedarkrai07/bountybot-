@@ -16,6 +16,9 @@ import { PaidRequest } from '../requests/PaidRequest';
 import { ApplyRequest } from '../requests/ApplyRequest';
 import { ListRequest } from '../requests/ListRequest';
 import { Activities } from '../constants/activities';
+import NotificationPermissionError from '../errors/NotificationPermissionError';
+import DMPermissionError from '../errors/DMPermissionError';
+import ErrorUtils from '../utils/ErrorUtils';
 
 export default class implements DiscordEvent {
     name = 'messageReactionAdd';
@@ -139,7 +142,7 @@ export default class implements DiscordEvent {
                     },
                     directRequest: null,
                 });
-        }
+            }
 
         } else if (reaction.emoji.name === '📮') {
             Log.info(`${user.tag} attempting to submit bounty ${bountyId}`);
@@ -219,6 +222,13 @@ export default class implements DiscordEvent {
             } else if (e instanceof AuthorizationError) {
                 Log.info(`${user.tag} submitted a request that failed authorization`);
                 return user.send(`<@${user.id}>\n` + e.message);
+            } else if (e instanceof NotificationPermissionError) {
+                await ErrorUtils.sendToDefaultChannel(e.message, request);
+            } else if (e instanceof DMPermissionError) {
+                const message = `It looks like bot does not have permission to DM you.\n \n` +
+                    '**Message** \n' +
+                    e.message;
+                await reaction.message.channel.send({ content: message });
             }
             else {
                 LogUtils.logError('error', e);

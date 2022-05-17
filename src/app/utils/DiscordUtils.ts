@@ -1,17 +1,17 @@
-import { GuildMember, Role, Guild, DMChannel, AwaitMessagesOptions, Message, Collection, Snowflake, TextChannel, Channel } from 'discord.js';
-import client from '../app';
-import { LogUtils } from './Log';
-import ValidationError from '../errors/ValidationError';
-import { BountyEmbedFields } from '../constants/embeds';
-import RuntimeError from '../errors/RuntimeError';
-import MongoDbUtils from '../utils/MongoDbUtils';
-import mongo, { Db } from 'mongodb';
-import { CustomerCollection } from '../types/bounty/CustomerCollection';
+import { AwaitMessagesOptions, Collection, DMChannel, Guild, GuildMember, Message, Role, Snowflake, TextChannel } from 'discord.js';
+import { Db } from 'mongodb';
 import { CommandContext } from 'slash-create';
-import TimeoutError from '../errors/TimeoutError';
+import client from '../app';
+import { BountyEmbedFields } from '../constants/embeds';
 import ConflictingMessageException from '../errors/ConflictingMessageException';
-import AuthorizationError from '../errors/AuthorizationError';
-import { BountyCollection } from '../types/bounty/BountyCollection';
+import DMPermissionError from '../errors/DMPermissionError';
+import NotificationPermissionError from '../errors/NotificationPermissionError';
+import RuntimeError from '../errors/RuntimeError';
+import TimeoutError from '../errors/TimeoutError';
+import ValidationError from '../errors/ValidationError';
+import { CustomerCollection } from '../types/bounty/CustomerCollection';
+import MongoDbUtils from '../utils/MongoDbUtils';
+import { LogUtils } from './Log';
 
 
 
@@ -97,7 +97,7 @@ const DiscordUtils = {
         const message = messages.first();
         const messageText = message.content;
 
-        if(message.author.bot) {
+        if (message.author.bot) {
             throw new ValidationError(
                 'Detected bot response to last message! The previous bounty has been discarded.\n' +
                 'Currently, you can only run one Bounty create command at once.\n' +
@@ -158,39 +158,17 @@ const DiscordUtils = {
             try {
                 await toUser.send(content);
             } catch (e) {
-                throw new AuthorizationError(
-                    `It looks like bot does not have permission to DM ${toUser.displayName}.\n \n` +
-                    '**Message**' +
-                    content
-                )
+                throw new DMPermissionError(content)
             }
         }
     },
 
     // Send a notification to an interested party (use a DM)
-    async activityNotification(content: string, toUser: GuildMember, bountyId: string): Promise<void> {
+    async activityNotification(content: string, toUser: GuildMember): Promise<void> {
         try {
             await toUser.send(content);
         } catch (e) {
-            const db: Db = await MongoDbUtils.connect('bountyboard');
-            const bountyCollection = db.collection('bounties');
-            const bounty: BountyCollection = await bountyCollection.findOne({
-                _id: new mongo.ObjectId(bountyId)
-            });
-            const bountyChannel = await DiscordUtils.getBountyChannelfromCustomerId(bounty.customerId);
-
-            await bountyChannel.send({
-                embeds: [{
-                    title: 'Bounty Notification',
-                    fields: [{
-                        name: 'Owner',
-                        value: `<@${toUser.id}>`,
-                    }, {
-                        name: 'Message',
-                        value: content,
-                    }]
-                }]
-            });
+            throw new NotificationPermissionError(content);
         }
     },
 

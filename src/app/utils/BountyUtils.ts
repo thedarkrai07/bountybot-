@@ -426,7 +426,7 @@ const BountyUtils = {
                         await guildMember.send({
                             content: `> Failed to publish bounty in **#${bountyChannel.name}**. \n` +
                                 `> Reason: ${e.message} \n` +
-                                `> Please add bot to **#${bountyChannel.name}** to publish is successfully. If issue persists, please contact support \n \n `
+                                `> Please add bot to **#${bountyChannel.name}** to publish successfully. If issue persists, please contact support \n \n `
                         });
 
                     bountyChannel = await DiscordUtils.getBountyChannelfromCustomerId(bounty.customerId);
