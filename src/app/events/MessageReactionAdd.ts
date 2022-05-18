@@ -218,10 +218,24 @@ export default class implements DiscordEvent {
             if (e instanceof ValidationError) {
                 // TO-DO: Consider adding a User (tag, id) metadata field to logging objects
                 Log.info(`${user.tag} submitted a request that failed validation`);
-                return user.send(`<@${user.id}>\n` + e.message);
+                try {
+                    return user.send(`<@${user.id}>\n` + e.message);
+                } catch (e) {
+                    const message = `It looks like bot does not have permission to DM <@${user.id}>.\n \n` +
+                        '**Message** \n' +
+                        e.message;
+                    await reaction.message.channel.send({ content: message });
+                }
             } else if (e instanceof AuthorizationError) {
                 Log.info(`${user.tag} submitted a request that failed authorization`);
-                return user.send(`<@${user.id}>\n` + e.message);
+                try {
+                    return user.send(`<@${user.id}>\n` + e.message);
+                } catch (e) {
+                    const message = `It looks like bot does not have permission to DM <@${user.id}>.\n \n` +
+                        '**Message** \n' +
+                        e.message;
+                    await reaction.message.channel.send({ content: message });
+                }
             } else if (e instanceof NotificationPermissionError) {
                 await ErrorUtils.sendToDefaultChannel(e.message, request);
             } else if (e instanceof DMPermissionError) {
@@ -232,7 +246,14 @@ export default class implements DiscordEvent {
             }
             else {
                 LogUtils.logError('error', e);
-                return user.send('Sorry something is not working and our devs are looking into it.');
+                try {
+                    return user.send('Sorry something is not working and our devs are looking into it.');
+                } catch (e) {
+                    const message = `It looks like bot does not have permission to DM <@${user.id}>.\n \n` +
+                        '**Message** \n' +
+                        e.message;
+                    await reaction.message.channel.send({ content: message });
+                }
             }
         }
     }
