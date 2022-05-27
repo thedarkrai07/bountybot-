@@ -25,6 +25,9 @@ export const paidBounty = async (request: PaidRequest): Promise<void> => {
     await writeDbHandler(request, paidByUser);
 
     const cardMessage = await BountyUtils.canonicalCard(getDbResult.dbBountyResult._id, request.activity);
+
+	// Update bounty with any web compatibility changes or conversions
+	BountyUtils.bountyCleanUp(getDbResult.dbBountyResult._id);
 	
 	const creatorPaidDM = 
         `Thank you for marking your bounty as paid <${cardMessage.url}>\n` +

@@ -141,10 +141,14 @@ export const listBounty = async (request: ListRequest): Promise<any> => {
 export const generateBountyFieldSegment = async (bountyRecord: BountyCollection, cardMessage: Message): Promise<any> => {
 	const url = !!cardMessage ? cardMessage.url : process.env.BOUNTY_BOARD_URL + bountyRecord._id
 	let forString = '';
-	if (bountyRecord.gate) {
+	if (bountyRecord.gateTo) {
+		forString = `claimable by role ${bountyRecord.gateTo[0].discordName}`;
+	} else if (bountyRecord.gate) {  // deprecated, replaced by gatedTo
 		const role = await DiscordUtils.getRoleFromRoleId(bountyRecord.gate[0], bountyRecord.customerId);
 		forString = `claimable by role ${role ? role.name : "<missing role>"}`;
-	} else if (bountyRecord.assign) {
+	} else if (bountyRecord.assignTo) {
+		forString = `claimable by user ${bountyRecord.assignTo.discordHandle}`;
+	} else if (bountyRecord.assign) {  // .assign is deprecated
 		const assignedUser = await DiscordUtils.getGuildMemberFromUserId(bountyRecord.assign, bountyRecord.customerId);
 		forString = `claimable by user ${assignedUser ? assignedUser.user.tag : "<missing user>"}`;
 	} else {

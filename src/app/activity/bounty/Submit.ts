@@ -26,6 +26,9 @@ export const submitBounty = async (request: SubmitRequest): Promise<void> => {
 
     const cardMessage = await BountyUtils.canonicalCard(getDbResult.dbBountyResult._id, request.activity);
 
+	// Update bounty with any web compatibility changes or conversions
+	BountyUtils.bountyCleanUp(getDbResult.dbBountyResult._id);
+
 	let creatorSubmitDM = `Please reach out to <@${submittedByUser.user.id}>. They are ready for bounty review <${cardMessage.url}>`
 
 	if (request.url) {

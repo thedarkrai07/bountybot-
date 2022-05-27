@@ -33,7 +33,10 @@ export const assignBounty = async (request: AssignRequest): Promise<any> => {
     }
 
     const cardMessage = await BountyUtils.canonicalCard(getDbResult.dbBountyResult._id, request.activity);
-    
+
+    // Update bounty with any web compatibility changes or conversions
+    BountyUtils.bountyCleanUp(getDbResult.dbBountyResult._id);
+
     let assigningContent = `Your bounty has been assigned to <@${assignedUser.user.id}> ${cardMessage.url}`;
     let assignedContent = `You have been assigned this bounty! Go to the bounty card to claim it. Reach out to <@${assigningUser.id}> with any questions\n` +
     `<${cardMessage.url}>`;
@@ -75,8 +78,11 @@ const writeDbHandler = async (request: AssignRequest, assignedBounty: BountyColl
     
     const writeResult: UpdateWriteOpResult = await bountyCollection.updateOne(assignedBounty, {
         $set: {
-            assign: request.assign,
-            assignedName: assignedUser.user.tag
+            assignTo: {
+                discordId: request.assign,
+                discordHandle: assignedUser.user.tag,
+                iconUrl: assignedUser.user.avatarURL(),
+            },
         },
     });
 

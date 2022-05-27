@@ -1,6 +1,6 @@
 import { Bounty } from '../../types/bounty/Bounty';
 import Log from '../../utils/Log';
-import { Message, GuildMember, DMChannel, AwaitMessagesOptions } from 'discord.js';
+import { Message, GuildMember, DMChannel, AwaitMessagesOptions, Role } from 'discord.js';
 import DiscordUtils from '../../utils/DiscordUtils';
 import BountyUtils from '../../utils/BountyUtils';
 import MongoDbUtils from '../../utils/MongoDbUtils';
@@ -193,17 +193,19 @@ const createDbHandler = async (
     const db: Db = await MongoDbUtils.connect('bountyboard');
     const dbBounty = db.collection('bounties');
 
-    if (createRequest.assign) {
-        createRequest.assignedName = (await DiscordUtils.getGuildMemberFromUserId(createRequest.assign, createRequest.guildId)).displayName;
-    }
+    const assignedTo: GuildMember = createRequest.assign ? await DiscordUtils.getGuildMemberFromUserId(createRequest.assign, createRequest.guildId) : null;
 
-    const createdBounty: Bounty = generateBountyRecord(
+    const gatedTo: Role = createRequest.gate ? await DiscordUtils.getRoleFromRoleId(createRequest.gate, createRequest.guildId) : null;
+
+    const createdBounty: Bounty = await generateBountyRecord(
         createRequest,
         description,
         criteria,
         dueAt,
         guildMember,
         owedTo,
+        assignedTo,
+        gatedTo,
         createdInChannel);
 
 
@@ -217,15 +219,17 @@ const createDbHandler = async (
 
 }
 
-export const generateBountyRecord = (
+export const generateBountyRecord = async (
     createRequest: CreateRequest,
     description: string,
     criteria: string,
     dueAt: Date,
     guildMember: GuildMember,
     owedTo: GuildMember,
+    assignedTo: GuildMember,
+    gatedTo: Role,
     createdInChannel: string
-): Bounty => {
+): Promise<Bounty> => {
 
     Log.debug('generating bounty record')
     const [reward, symbol] = (createRequest.reward != null) ? createRequest.reward.split(' ') : [null, null];
@@ -273,7 +277,7 @@ export const generateBountyRecord = (
     };
 
     if (createRequest.gate) {
-        bountyRecord.gate = [createRequest.gate]
+        bountyRecord.gateTo = [{discordId: gatedTo.id, discordName: gatedTo.name, iconUrl: gatedTo.iconURL()}];
     }
 
     if (createRequest.evergreen) {
@@ -285,8 +289,11 @@ export const generateBountyRecord = (
     }
 
     if (createRequest.assign) {
-        bountyRecord.assign = createRequest.assign;
-        bountyRecord.assignedName = createRequest.assignedName;
+        bountyRecord.assignTo = {
+            discordId: assignedTo.user.id,
+            discordHandle: assignedTo.user.tag,
+            iconUrl: assignedTo.user.avatarURL(),
+        }
     }
 
     if (createRequest.requireApplication) {

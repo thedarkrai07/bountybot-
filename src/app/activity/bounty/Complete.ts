@@ -34,6 +34,9 @@ export const completeBounty = async (request: CompleteRequest): Promise<void> =>
 	const submittedByUser = await completedByUser.guild.members.fetch(submittedByUserId);
     
     const cardMessage = await BountyUtils.canonicalCard(getDbResult.dbBountyResult._id, request.activity);
+
+	// Update bounty with any web compatibility changes or conversions
+	BountyUtils.bountyCleanUp(getDbResult.dbBountyResult._id);
 	
 	let creatorCompleteDM = 
         `Thank you for reviewing <${cardMessage.url}>\n` +
