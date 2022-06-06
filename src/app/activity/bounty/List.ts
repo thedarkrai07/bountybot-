@@ -143,10 +143,8 @@ export const generateBountyFieldSegment = async (bountyRecord: BountyCollection,
 	let forString = '';
 
 	if (bountyRecord.claimedBy) {
-		let claimer = `claimed by @${bountyRecord.claimedBy.discordHandle}`;
 		let metadata = getListMetadata(bountyRecord, listType);
-
-		forString = `${claimer} ${metadata}`;
+		forString = metadata ?  metadata : `claimed by @${bountyRecord.claimedBy.discordHandle}`;
 	} else {
 		if (bountyRecord.gate) {
 			const role = await DiscordUtils.getRoleFromRoleId(bountyRecord.gate[0], bountyRecord.customerId);
