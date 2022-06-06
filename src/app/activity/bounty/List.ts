@@ -143,10 +143,10 @@ export const generateBountyFieldSegment = async (bountyRecord: BountyCollection,
 	let forString = '';
 
 	if (bountyRecord.claimedBy) {
-		let metadata = getListMetadata(bountyRecord, listType);
-		forString = metadata ?  metadata : `claimed by @${bountyRecord.claimedBy.discordHandle}`;
+		let claimedByMeMetadata = getClaimedByMeMetadata(bountyRecord, listType);
+		forString = claimedByMeMetadata ?  claimedByMeMetadata : `claimed by @${bountyRecord.claimedBy.discordHandle}`;
 	} else {
-		if (bountyRecord.gate) {
+	  if (bountyRecord.gate) {
 			const role = await DiscordUtils.getRoleFromRoleId(bountyRecord.gate[0], bountyRecord.customerId);
 			forString = `claimable by role ${role ? role.name : "<missing role>"}`;
 		} else if (bountyRecord.assign) {
@@ -162,19 +162,16 @@ export const generateBountyFieldSegment = async (bountyRecord: BountyCollection,
 	);
 };
 
-const getListMetadata = (record: BountyCollection, listType: string) => {
+const getClaimedByMeMetadata = (record: BountyCollection, listType: string) => {
 	let text = '';
-
-	switch (listType) {
-		case 'CLAIMED_BY_ME':
-			if (record.status === BountyStatus.complete) {
+	
+	if (listType === 'CLAIMED_BY_ME') {
+		  if (record.status === BountyStatus.complete) {
 				text = `payment is ${record.paidStatus.toUpperCase()}`;
 			} else if (record.status === BountyStatus.in_progress || record.status === BountyStatus.in_review) {
 				text = `is due on ${new Date (record.dueAt).toLocaleDateString()}`;
 			}
-			break;
-
-	}
-
+		}
+		
 	return text;
 };
