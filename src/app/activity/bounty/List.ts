@@ -141,28 +141,28 @@ export const listBounty = async (request: ListRequest): Promise<any> => {
 export const generateBountyFieldSegment = async (bountyRecord: BountyCollection, cardMessage: Message, listType: string): Promise<any> => {
 	const url = !!cardMessage ? cardMessage.url : process.env.BOUNTY_BOARD_URL + bountyRecord._id
 	let forString = '';
-	let claimed = '';
 
-	if (bountyRecord.gate) {
-		const role = await DiscordUtils.getRoleFromRoleId(bountyRecord.gate[0], bountyRecord.customerId);
+	if (bountyRecord.claimedBy) {
+		let claimer = `claimed by @${bountyRecord.claimedBy.discordHandle}`;
+		let metadata = getListMetadata(bountyRecord, listType);
 
-		claimed = getListMetadata(bountyRecord, listType);
-		let metadata = claimed ? claimed : 'claimable by';
-		forString = `${metadata} role ${role ? role.name : "<missing role>"}`;
-	} else if (bountyRecord.assign) {
-		const assignedUser = await DiscordUtils.getGuildMemberFromUserId(bountyRecord.assign, bountyRecord.customerId);
-
-		claimed = getListMetadata(bountyRecord, listType);
-		let metadata = claimed ? claimed : 'claimable by';
-		forString = `${metadata} user ${assignedUser ? assignedUser.user.tag : "<missing user>"}`;
+		forString = `${claimer} ${metadata}`;
 	} else {
-		forString = 'claimable by anyone';
-	}	
+		if (bountyRecord.gate) {
+			const role = await DiscordUtils.getRoleFromRoleId(bountyRecord.gate[0], bountyRecord.customerId);
+			forString = `claimable by role ${role ? role.name : "<missing role>"}`;
+		} else if (bountyRecord.assign) {
+			const assignedUser = await DiscordUtils.getGuildMemberFromUserId(bountyRecord.assign, bountyRecord.customerId);
+			forString = `claimable by user ${assignedUser ? assignedUser.user.tag : "<missing user>"}`;
+		} else {
+			forString = 'claimable by anyone';
+		}	
+	}
+	
 	return (
 		`> [${bountyRecord.title}](${url}) ${forString} **${bountyRecord.reward.amount + ' ' + bountyRecord.reward.currency.toUpperCase()}**\n`
 	);
 };
-
 
 const getListMetadata = (record: BountyCollection, listType: string) => {
 	let text = '';
@@ -175,14 +175,6 @@ const getListMetadata = (record: BountyCollection, listType: string) => {
 				text = `is due on ${new Date (record.dueAt).toLocaleDateString()}`;
 			}
 			break;
-		default:
-			if (
-				record.status === BountyStatus.in_progress ||
-				record.status === BountyStatus.in_review ||
-				record.status === BountyStatus.complete
-				) {
-				text = 'claimed by';
-			}
 
 	}
 
