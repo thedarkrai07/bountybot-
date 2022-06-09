@@ -1,4 +1,4 @@
-import { GuildMember, Message, MessageEmbed, TextChannel } from 'discord.js';
+import { GuildMember, Message, MessageActionRow, MessageButton, MessageEmbed, TextChannel } from 'discord.js';
 import { AssignRequest } from '../../requests/AssignRequest';
 import { BountyCollection } from '../../types/bounty/BountyCollection';
 import { Bounty } from '../../types/bounty/Bounty';
@@ -94,10 +94,10 @@ export const assignedBountyMessage = async (message: Message, appliedForBounty: 
     const embedOrigMessage: MessageEmbed = message.embeds[0];
     embedOrigMessage.setTitle(await BountyUtils.createPublicTitle(<Bounty>appliedForBounty));
     embedOrigMessage.setFooter({text: '🏴 - claim | ❌ - delete'});
-    await message.edit({ embeds: [embedOrigMessage] });
-	await message.reactions.removeAll();
-	await message.react('🏴');
-	await message.react('❌');
+    const componentActions = new MessageActionRow().addComponents(['👷', '📝', '🔄'].map(a => 
+        new MessageButton().setEmoji(a).setStyle('SECONDARY').setCustomId(a)
+    ))
+    await message.edit({ embeds: [embedOrigMessage], components: [componentActions] });
 
 };
 

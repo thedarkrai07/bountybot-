@@ -213,7 +213,7 @@ export default class implements DiscordEvent {
                     const content = `It looks like bot does not have permission to DM <@${user.id}>.\n \n` +
                         '**Message** \n' +
                         errorContent;
-                    const message = await (interaction.message as Message).channel.send({ content });
+                    const message = await interaction.reply({ content, ephemeral: true });
                     return message;
                 }
             } else if (e instanceof AuthorizationError) {
@@ -226,7 +226,7 @@ export default class implements DiscordEvent {
                     const content = `It looks like bot does not have permission to DM <@${user.id}>.\n \n` +
                         '**Message** \n' +
                         errorContent;
-                    const message = await (interaction.message as Message).channel.send({ content });
+                    const message = await interaction.reply({ content, ephemeral: true });
                     return message;
 
                 }
@@ -236,7 +236,7 @@ export default class implements DiscordEvent {
                 const content = `It looks like bot does not have permission to DM <@${user.id}>.\n \n` +
                     '**Message** \n' +
                     e.message;
-                const message = await (interaction.message as Message).channel.send({ content });
+                const message = await interaction.reply({ content, ephemeral: true });
                 return message;
             }
             else {

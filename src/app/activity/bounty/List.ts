@@ -1,6 +1,6 @@
 import MongoDbUtils  from '../../utils/MongoDbUtils';
 import mongo, { Cursor, Db, UpdateWriteOpResult } from 'mongodb';
-import { Message, MessageEmbedOptions } from 'discord.js';
+import { Message, MessageActionRow, MessageButton, MessageEmbedOptions } from 'discord.js';
 import Log from '../../utils/Log';
 import { BountyCollection } from '../../types/bounty/BountyCollection';
 import DiscordUtils from '../../utils/DiscordUtils';
@@ -113,13 +113,15 @@ export const listBounty = async (request: ListRequest): Promise<any> => {
 	listCard.footer = { text: footerText };
 	let listMessage: Message;
 	if (!listType) {
+		const componentActions = new MessageActionRow().addComponents(['👷', '📝', '🔄'].map(a => 
+			new MessageButton().setEmoji(a).setStyle('SECONDARY').setCustomId(a)
+		))
 		if (!!request.message) {  // List from a refresh reaction
 			listMessage = request.message;
-			await listMessage.edit({ embeds: [listCard] });
-			await listMessage.reactions.removeAll();
+			await listMessage.edit({ embeds: [listCard], components: [componentActions] });
 		} else {  // List from a slash command
 			const channel = await DiscordUtils.getTextChannelfromChannelId(request.commandContext.channelID);
-			listMessage = await channel.send({ embeds: [listCard] });
+			listMessage = await channel.send({ embeds: [listCard], components: [componentActions] });
 			if (request.commandContext.channelID == dbCustomerResult.bountyChannel) {
 				const writeResult: UpdateWriteOpResult = await customerCollection.updateOne( {customerId: request.guildId}, {
 					$set: {
@@ -129,10 +131,6 @@ export const listBounty = async (request: ListRequest): Promise<any> => {
 			}
 			await request.commandContext.delete();  // We're done
 		}
-		await listMessage.react('👷');
-		await listMessage.react('📝');
-		await listMessage.react('🔄');
-
 	} else {  // List from a DM reaction
 		await listUser.send({ embeds: [listCard] });
 	}
