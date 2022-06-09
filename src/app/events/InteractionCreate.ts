@@ -1,4 +1,4 @@
-import { DMChannel, Message, MessageReaction, PartialUser, TextChannel, User } from 'discord.js';
+import { ButtonInteraction, DMChannel, Message, MessageReaction, PartialUser, TextChannel, User } from 'discord.js';
 import Log, { LogUtils } from '../utils/Log';
 import ValidationError from '../errors/ValidationError';
 import DiscordUtils from '../utils/DiscordUtils';
@@ -21,43 +21,29 @@ import DMPermissionError from '../errors/DMPermissionError';
 import ErrorUtils from '../utils/ErrorUtils';
 
 export default class implements DiscordEvent {
-    // disable message react events
-    name = '_messageReactionAdd';
+    name = 'interactionCreate';
     once = false;
 
-    async execute(reaction: MessageReaction, user: User | PartialUser): Promise<any> {
-        // When a reaction is received, check if the structure is partial
-        if (reaction.partial) {
-            // Log.info('Pulling full reaction from partial');
-            await reaction.fetch();
-        }
-
-        if (user.partial) {
-            // Log.info('Pulling full user from partial');
-            try {
-                await user.fetch();
-            } catch (error) {
-                LogUtils.logError('failed to pull user partial', error);
-                return;
-            }
-        }
-
+    async execute(interaction: ButtonInteraction): Promise<any> {
+        const user: User = interaction.user;
+        if (interaction.isCommand()) return;
+        
         if (user.bot) {
             // Log.info('Bot detected.');
             return;
         }
 
-        if (reaction.message.author.id !== reaction.client.user.id) {
+        if (interaction.message.author.id !== interaction.client.user.id) {
             // Log.info('Message Reaction Processing Stopped. Message author is not this bot');
             return;
         }
 
-        await this.messageReactionHandler(reaction, user as User);
+        await this.interactionHandler(interaction, user);
     }
 
-    async messageReactionHandler(reaction: MessageReaction, user: User) {
-        let message: Message = await reaction.message.fetch();
-        Log.info(`Processing reaction ${reaction.emoji.name} to message ${message.id}`)
+    async interactionHandler(interaction: ButtonInteraction, user: User) {
+        let message: Message = interaction.message as Message<boolean>;
+        Log.info(`Processing reaction ${interaction.customId} to message ${message.id}`)
 
         if (message === null) {
             Log.debug('message not found');
@@ -71,7 +57,7 @@ export default class implements DiscordEvent {
         const bountyId: string = DiscordUtils.getBountyIdFromEmbedMessage(message);
         let request: any;
 
-        if (reaction.emoji.name === '👍') {
+        if (interaction.customId === '👍') {
             Log.info(`${user.tag} attempting to publish bounty ${bountyId}`);
             const guildId = message.embeds[0].author.name.split(': ')[1];
 
@@ -87,7 +73,7 @@ export default class implements DiscordEvent {
                 },
                 clientSyncRequest: null,
             });
-        } else if (reaction.emoji.name === '🏴') {
+        } else if (interaction.customId === '🏴') {
             Log.info(`${user.tag} attempting to claim a bounty ${bountyId} from the bounty board`);
             request = new ClaimRequest({
                 commandContext: null,
@@ -97,7 +83,7 @@ export default class implements DiscordEvent {
                 },
                 clientSyncRequest: null,
             });
-        } else if (reaction.emoji.name === '💰') {
+        } else if (interaction.customId === '💰') {
             Log.info(`${user.tag} attempting to mark a bounty as paid ${bountyId} from the bounty board`);
             request = new PaidRequest({
                 commandContext: null,
@@ -106,7 +92,7 @@ export default class implements DiscordEvent {
                     message: message
                 }
             });
-        } else if (reaction.emoji.name === '🙋') {
+        } else if (interaction.customId === '🙋') {
             Log.info(`${user.tag} attempting to apply for a bounty ${bountyId} from the bounty board`);
             request = new ApplyRequest({
                 commandContext: null,
@@ -116,7 +102,7 @@ export default class implements DiscordEvent {
                 },
             });
 
-        } else if (reaction.emoji.name === '❌') {
+        } else if (interaction.customId === '❌') {
             Log.info(`${user.tag} attempting to delete bounty ${bountyId}`);
             const guildId = message.embeds[0].author.name.split(': ')[1];
 
@@ -145,7 +131,7 @@ export default class implements DiscordEvent {
                 });
             }
 
-        } else if (reaction.emoji.name === '📮') {
+        } else if (interaction.customId === '📮') {
             Log.info(`${user.tag} attempting to submit bounty ${bountyId}`);
             // TODO: have bot ask user for details
             request = new SubmitRequest({
@@ -156,7 +142,7 @@ export default class implements DiscordEvent {
                 },
             });
 
-        } else if (reaction.emoji.name === '✅') {
+        } else if (interaction.customId === '✅') {
             Log.info(`${user.tag} attempting to mark bounty ${bountyId} complete`);
             request = new CompleteRequest({
                 commandContext: null,
@@ -166,7 +152,7 @@ export default class implements DiscordEvent {
                 },
             });
 
-        } else if (reaction.emoji.name === '👷') {
+        } else if (interaction.customId === '👷') {
             Log.info(`${user.tag} attempting to list my claimed bounties`);
             request = new ListRequest({
                 commandContext: null,
@@ -177,7 +163,7 @@ export default class implements DiscordEvent {
                 },
             });
 
-        } else if (reaction.emoji.name === '📝') {
+        } else if (interaction.customId === '📝') {
             Log.info(`${user.tag} attempting to list my created bounties`);
             request = new ListRequest({
                 commandContext: null,
@@ -188,7 +174,7 @@ export default class implements DiscordEvent {
                 },
             });
 
-        } else if (reaction.emoji.name === '🔄') {
+        } else if (interaction.customId === '🔄') {
             Log.info(`${user.tag} attempting to refresh the list`);
             request = new ListRequest({
                 commandContext: null,
@@ -199,7 +185,7 @@ export default class implements DiscordEvent {
                 },
             });
 
-        } else if (reaction.emoji.name === '🆘') {
+        } else if (interaction.customId === '🆘') {
             Log.info(`${user.tag} attempting to seek help for bounty ${bountyId}`);
             request = new HelpRequest({
                 commandContext: null,
@@ -227,7 +213,7 @@ export default class implements DiscordEvent {
                     const content = `It looks like bot does not have permission to DM <@${user.id}>.\n \n` +
                         '**Message** \n' +
                         errorContent;
-                    const message = await reaction.message.channel.send({ content });
+                    const message = await (interaction.message as Message).channel.send({ content });
                     return message;
                 }
             } else if (e instanceof AuthorizationError) {
@@ -240,7 +226,7 @@ export default class implements DiscordEvent {
                     const content = `It looks like bot does not have permission to DM <@${user.id}>.\n \n` +
                         '**Message** \n' +
                         errorContent;
-                    const message = await reaction.message.channel.send({ content });
+                    const message = await (interaction.message as Message).channel.send({ content });
                     return message;
 
                 }
@@ -250,7 +236,7 @@ export default class implements DiscordEvent {
                 const content = `It looks like bot does not have permission to DM <@${user.id}>.\n \n` +
                     '**Message** \n' +
                     e.message;
-                const message = await reaction.message.channel.send({ content });
+                const message = await (interaction.message as Message).channel.send({ content });
                 return message;
             }
             else {
@@ -263,12 +249,10 @@ export default class implements DiscordEvent {
                     const content = `It looks like bot does not have permission to DM <@${user.id}>.\n \n` +
                         '**Message** \n' +
                         errorContent;
-                    const message = await reaction.message.channel.send({ content });
+                    const message = await (interaction.message as Message).channel.send({ content });
                     return message;
                 }
             }
         }
     }
-
-
 }

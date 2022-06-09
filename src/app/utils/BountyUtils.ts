@@ -1,6 +1,6 @@
 import ValidationError from '../errors/ValidationError';
 import Log, { LogUtils } from './Log';
-import { Role, Message, MessageOptions, TextChannel, AwaitMessagesOptions, DMChannel, GuildMember } from 'discord.js';
+import { Role, Message, MessageOptions, TextChannel, AwaitMessagesOptions, DMChannel, GuildMember, MessageActionRow, MessageButton } from 'discord.js';
 import DiscordUtils from '../utils/DiscordUtils';
 import { URL } from 'url';
 import { BountyCollection } from '../types/bounty/BountyCollection';
@@ -135,7 +135,7 @@ const BountyUtils = {
     async validateAssign(assign: string, guildId: string, applicants: Applicant[]): Promise<void> {
         if (applicants && !applicants.some(applicant => applicant.discordId == assign)) {
             let applicantList: string = '';
-            applicants.forEach( applicant => { applicantList += `\n ${applicant.discordHandle}`});
+            applicants.forEach(applicant => { applicantList += `\n ${applicant.discordHandle}` });
             throw new ValidationError(`Please choose a user from the list of applicants: ${applicantList}`);
         }
         try {
@@ -308,48 +308,49 @@ const BountyUtils = {
 
         let footer = {};
         let reacts = [];
+        let actions = [];
         let color = undefined;
 
         switch (bounty.status) {
             case BountyStatus.draft:
                 footer = { text: '👍 - publish | ❌ - delete | Please reply within 60 minutes', };
-                reacts.push('👍');
-                reacts.push('❌');
+                actions.push('👍');
+                actions.push('❌');
                 break;
             case BountyStatus.open:
                 if (bounty.requireApplication && (!bounty.assign)) {
                     footer = { text: '🙋 - apply | ❌ - delete', };
-                    reacts.push('🙋');
+                    actions.push('🙋');
                 } else {
                     footer = { text: '🏴 - claim | ❌ - delete', };
-                    reacts.push('🏴');
+                    actions.push('🏴');
                 }
-                reacts.push('❌');
+                actions.push('❌');
                 break;
             case BountyStatus.in_progress:
                 color = '#d39e00';
-                reacts.push('📮');
-                reacts.push('✅');
+                actions.push('📮');
+                actions.push('✅');
                 if (bounty.paidStatus !== PaidStatus.paid) {
                     footer = { text: '📮 - submit | ✅ - mark complete | 💰 - mark paid | 🆘 - help', };
-                    reacts.push('💰');
+                    actions.push('💰');
                 } else {
                     footer = { text: '📮 - submit | ✅ - mark complete | 🆘 - help', };
                 }
-                reacts.push('🆘');
+                actions.push('🆘');
                 fields.push({ name: 'Claimed by', value: (await DiscordUtils.getGuildMemberFromUserId(bounty.claimedBy.discordId, bounty.customerId)).user.tag, inline: true });
                 if (bounty.paidStatus === PaidStatus.paid) fields.push({ name: 'Paid by', value: (await DiscordUtils.getGuildMemberFromUserId(bounty.createdBy.discordId, bounty.customerId)).user.tag, inline: true });
                 break;
             case BountyStatus.in_review:
                 color = '#d39e00';
-                reacts.push('✅');
+                actions.push('✅');
                 if (bounty.paidStatus !== PaidStatus.paid) {
                     footer = { text: '✅ - mark complete | 💰 - mark paid | 🆘 - help', };
-                    reacts.push('💰');
+                    actions.push('💰');
                 } else {
                     footer = { text: '✅ - mark complete | 🆘 - help', };
                 }
-                reacts.push('🆘');
+                actions.push('🆘');
                 fields.push({ name: 'Claimed by', value: (await DiscordUtils.getGuildMemberFromUserId(bounty.claimedBy.discordId, bounty.customerId)).user.tag, inline: true });
                 fields.push({ name: 'Submitted by', value: (await DiscordUtils.getGuildMemberFromUserId(bounty.submittedBy.discordId, bounty.customerId)).user.tag, inline: true });
                 if (bounty.paidStatus === PaidStatus.paid) fields.push({ name: 'Paid by', value: (await DiscordUtils.getGuildMemberFromUserId(bounty.createdBy.discordId, bounty.customerId)).user.tag, inline: true });
@@ -359,7 +360,7 @@ const BountyUtils = {
                 reacts.push('🔥');
                 if (bounty.paidStatus !== PaidStatus.paid) {
                     footer = { text: '💰 - mark paid', };
-                    reacts.push('💰');
+                    actions.push('💰');
                 }
                 fields.push({ name: 'Claimed by', value: (await DiscordUtils.getGuildMemberFromUserId(bounty.claimedBy.discordId, bounty.customerId)).user.tag, inline: true });
                 // Bounty might jump directly to Complete status so these would be null...
@@ -371,6 +372,7 @@ const BountyUtils = {
 
         const isDraftBounty = (bounty.status == BountyStatus.draft)
         const createdAt = new Date(bounty.createdAt);
+        
         let cardEmbeds: MessageOptions = {
             embeds: [{
                 title: await BountyUtils.createPublicTitle(bounty),
@@ -385,9 +387,18 @@ const BountyUtils = {
                 footer: footer,
                 color: color,
             }],
+            components: actions.length ? [
+                new MessageActionRow().addComponents(
+                    actions.map(a => 
+                        new MessageButton().setEmoji(a).setStyle('SECONDARY').setCustomId(a)
+                    )
+                )
+            ]
+            :
+            [],
         };
         if (!isDraftBounty && !!customer.lastListMessage) {
-            cardEmbeds.components = [{
+            cardEmbeds.components.push({
                 type: 1, //Action Row
                 components: [{
                     type: 2,
@@ -395,7 +406,7 @@ const BountyUtils = {
                     style: 5,
                     url: customer.lastListMessage,
                 }]
-            }];
+            });
         }
 
         // Create/Update the card
