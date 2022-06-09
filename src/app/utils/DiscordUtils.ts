@@ -1,16 +1,17 @@
-import { GuildMember, Role, Guild, DMChannel, AwaitMessagesOptions, Message, Collection, Snowflake, TextChannel, Channel } from 'discord.js';
-import client from '../app';
-import { LogUtils } from './Log';
-import ValidationError from '../errors/ValidationError';
-import { BountyEmbedFields } from '../constants/embeds';
-import RuntimeError from '../errors/RuntimeError';
-import MongoDbUtils  from '../utils/MongoDbUtils';
+import { AwaitMessagesOptions, Collection, DMChannel, Guild, GuildMember, Message, Role, Snowflake, TextChannel } from 'discord.js';
 import { Db } from 'mongodb';
-import { CustomerCollection } from '../types/bounty/CustomerCollection';
 import { CommandContext } from 'slash-create';
-import TimeoutError from '../errors/TimeoutError';
+import client from '../app';
+import { BountyEmbedFields } from '../constants/embeds';
 import ConflictingMessageException from '../errors/ConflictingMessageException';
-
+import DMPermissionError from '../errors/DMPermissionError';
+import NotificationPermissionError from '../errors/NotificationPermissionError';
+import RuntimeError from '../errors/RuntimeError';
+import TimeoutError from '../errors/TimeoutError';
+import ValidationError from '../errors/ValidationError';
+import { CustomerCollection } from '../types/bounty/CustomerCollection';
+import MongoDbUtils from '../utils/MongoDbUtils';
+import { LogUtils } from './Log';
 
 
 
@@ -31,7 +32,7 @@ const DiscordUtils = {
         return guild.roles.cache;
     },
 
-    async verifyOnlineFromGuildId(guildId: string) : Promise<boolean> {
+    async verifyOnlineFromGuildId(guildId: string): Promise<boolean> {
         const guild = await client.guilds.fetch(guildId);
         return guild.available;
     },
@@ -53,7 +54,7 @@ const DiscordUtils = {
         const channel: TextChannel = await client.channels.fetch(channelId).catch(e => {
             LogUtils.logError(`Could not find channel ${channelId}`, e);
             throw new RuntimeError(e);
-         }) as TextChannel;
+        }) as TextChannel;
         return channel;
     },
 
@@ -68,11 +69,11 @@ const DiscordUtils = {
     async getBountyChannelfromCustomerId(customerId: string): Promise<TextChannel> {
         const db: Db = await MongoDbUtils.connect('bountyboard');
         const customerCollection = db.collection('customers');
-    
+
         const dbCustomerResult: CustomerCollection = await customerCollection.findOne({
             customerId: customerId,
         });
-    
+
         const channel: TextChannel = await client.channels.fetch(dbCustomerResult.bountyChannel).catch(e => {
             LogUtils.logError(`Could not find bounty channel ${dbCustomerResult.bountyChannel} in customer ${customerId}`, e);
             throw new RuntimeError(e);
@@ -84,53 +85,53 @@ const DiscordUtils = {
     async awaitUserDM(dmChannel: DMChannel, replyOptions: AwaitMessagesOptions): Promise<string> {
         let messages: Collection<Snowflake, Message> = null;
         try {
-         messages = await dmChannel.awaitMessages(replyOptions);
-         // TODO: this is too broad
-         } catch (e) {
-             throw new ValidationError(
-                 'You have timed out!\n' +
-                 'You can run `/bounty create` to create a new bounty. Please respond to my questions within 5 minutes.\n' +
-                 'Please reach out to your favorite Bounty Board representative with any questions.\n'
-             );
+            messages = await dmChannel.awaitMessages(replyOptions);
+            // TODO: this is too broad
+        } catch (e) {
+            throw new ValidationError(
+                'You have timed out!\n' +
+                'You can run `/bounty create` to create a new bounty. Please respond to my questions within 5 minutes.\n' +
+                'Please reach out to your favorite Bounty Board representative with any questions.\n'
+            );
         }
         const message = messages.first();
-		const messageText = message.content;
+        const messageText = message.content;
 
-		if(message.author.bot) {
-			throw new ValidationError(
-				'Detected bot response to last message! The previous bounty has been discarded.\n' +
-				'Currently, you can only run one Bounty create command at once.\n' +
-				'Be sure to check your DMs for any messages from Bountybot.\n' +
-				'Please reach out to your favorite Bounty Board representative with any questions.\n',
-			);
-		}
+        if (message.author.bot) {
+            throw new ValidationError(
+                'Detected bot response to last message! The previous bounty has been discarded.\n' +
+                'Currently, you can only run one Bounty create command at once.\n' +
+                'Be sure to check your DMs for any messages from Bountybot.\n' +
+                'Please reach out to your favorite Bounty Board representative with any questions.\n',
+            );
+        }
 
-		return messageText;
-	},
+        return messageText;
+    },
 
     async awaitUserWalletDM(dmChannel: DMChannel, replyOptions: AwaitMessagesOptions): Promise<string> {
         let messages: Collection<Snowflake, Message> = null;
         try {
             messages = await dmChannel.awaitMessages(replyOptions);
-         // TODO: this is too broad
-        } 
+            // TODO: this is too broad
+        }
         catch (e) {
             throw new TimeoutError('awaitUserWalletDM');
         }
         const message = messages.first();
-		const messageText = message.content;
+        const messageText = message.content;
 
-		if (message.author.bot) {
-			throw new ConflictingMessageException(
+        if (message.author.bot) {
+            throw new ConflictingMessageException(
                 'Detected bot response to last message! The previous bounty has been discarded.\n' +
-				'Currently, you can only run one Bounty create command at once.\n' +
-				'Be sure to check your DMs for any messages from Bountybot.\n' +
-				'Please reach out to your favorite Bounty Board representative with any questions.\n',
+                'Currently, you can only run one Bounty create command at once.\n' +
+                'Be sure to check your DMs for any messages from Bountybot.\n' +
+                'Please reach out to your favorite Bounty Board representative with any questions.\n',
             );
-		}
+        }
 
-		return messageText;
-	},
+        return messageText;
+    },
 
     // TODO: graceful timeout handling needed
     async awaitUser(channel: TextChannel, replyOptions: AwaitMessagesOptions): Promise<Message> {
@@ -138,14 +139,14 @@ const DiscordUtils = {
         try {
             messages = await channel.awaitMessages(replyOptions);
             // TODO: this is too broad
-            } catch (e) {
-                throw new ValidationError(
-                    'You have timed out!\n' +
-                    'You can run `/bounty create` to create a new bounty. Please respond to my questions within 5 minutes.\n' +
-                    'Please reach out to your favorite Bounty Board representative with any questions.\n'
-                );
+        } catch (e) {
+            throw new ValidationError(
+                'You have timed out!\n' +
+                'You can run `/bounty create` to create a new bounty. Please respond to my questions within 5 minutes.\n' +
+                'Please reach out to your favorite Bounty Board representative with any questions.\n'
+            );
         }
-         return messages.first();
+        return messages.first();
     },
 
     // Send a response to a command (use ephemeral) or a reaction (use DM)
@@ -154,33 +155,41 @@ const DiscordUtils = {
             await commandContext.send({ content: content, ephemeral: true });
             // await commandContext.delete();
         } else {  // This was a reaction or a DB event
-            await toUser.send(content);
+            try {
+                await toUser.send(content);
+            } catch (e) {
+                throw new DMPermissionError(content)
+            }
         }
     },
 
     // Send a notification to an interested party (use a DM)
     async activityNotification(content: string, toUser: GuildMember): Promise<void> {
-        await toUser.send(content);
+        try {
+            await toUser.send(content);
+        } catch (e) {
+            throw new NotificationPermissionError(content);
+        }
     },
-    
+
 
     async hasAllowListedRole(userId: string, guildId: string, roles: string[]): Promise<boolean> {
-		return await DiscordUtils.hasSomeRole(userId, guildId, roles);
-	},
+        return await DiscordUtils.hasSomeRole(userId, guildId, roles);
+    },
 
     async hasSomeRole(userId: string, guildId: string, roles: string[]): Promise<boolean> {
         for (const role of roles) {
-			if (await DiscordUtils.hasRole(userId, guildId, role)) {
-				return true;
-			}
-		}
-		return false;
-	},
+            if (await DiscordUtils.hasRole(userId, guildId, role)) {
+                return true;
+            }
+        }
+        return false;
+    },
 
     async hasRole(userId: string, guildId: string, role: string): Promise<boolean> {
         const guildMember = await DiscordUtils.getGuildMemberFromUserId(userId, guildId);
-		return guildMember.roles.cache.some(r => r.id === role);
-	},
+        return guildMember.roles.cache.some(r => r.id === role);
+    },
 
     getBountyIdFromEmbedMessage(message: Message): string {
         return message.embeds[0].fields[BountyEmbedFields.bountyId].value;

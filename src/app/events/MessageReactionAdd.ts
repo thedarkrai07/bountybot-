@@ -16,6 +16,9 @@ import { PaidRequest } from '../requests/PaidRequest';
 import { ApplyRequest } from '../requests/ApplyRequest';
 import { ListRequest } from '../requests/ListRequest';
 import { Activities } from '../constants/activities';
+import NotificationPermissionError from '../errors/NotificationPermissionError';
+import DMPermissionError from '../errors/DMPermissionError';
+import ErrorUtils from '../utils/ErrorUtils';
 
 export default class implements DiscordEvent {
     name = 'messageReactionAdd';
@@ -139,7 +142,7 @@ export default class implements DiscordEvent {
                     },
                     directRequest: null,
                 });
-        }
+            }
 
         } else if (reaction.emoji.name === '📮') {
             Log.info(`${user.tag} attempting to submit bounty ${bountyId}`);
@@ -215,14 +218,53 @@ export default class implements DiscordEvent {
             if (e instanceof ValidationError) {
                 // TO-DO: Consider adding a User (tag, id) metadata field to logging objects
                 Log.info(`${user.tag} submitted a request that failed validation`);
-                return user.send(`<@${user.id}>\n` + e.message);
+                const errorContent = e.message;
+                try {
+                    const message =  await user.send(`<@${user.id}>\n` + errorContent);
+                    return message;
+                } catch (e) {
+                    const content = `It looks like bot does not have permission to DM <@${user.id}>.\n \n` +
+                        '**Message** \n' +
+                        errorContent;
+                    const message = await reaction.message.channel.send({ content });
+                    return message;
+                }
             } else if (e instanceof AuthorizationError) {
                 Log.info(`${user.tag} submitted a request that failed authorization`);
-                return user.send(`<@${user.id}>\n` + e.message);
+                const errorContent = e.message;
+                try {
+                    const message = await user.send(`<@${user.id}>\n` + errorContent);
+                    return message;
+                } catch (e) {
+                    const content = `It looks like bot does not have permission to DM <@${user.id}>.\n \n` +
+                        '**Message** \n' +
+                        errorContent;
+                    const message = await reaction.message.channel.send({ content });
+                    return message;
+
+                }
+            } else if (e instanceof NotificationPermissionError) {
+                return ErrorUtils.sendToDefaultChannel(e.message, request);
+            } else if (e instanceof DMPermissionError) {
+                const content = `It looks like bot does not have permission to DM <@${user.id}>.\n \n` +
+                    '**Message** \n' +
+                    e.message;
+                const message = await reaction.message.channel.send({ content });
+                return message;
             }
             else {
                 LogUtils.logError('error', e);
-                return user.send('Sorry something is not working and our devs are looking into it.');
+                const errorContent = 'Sorry something is not working and our devs are looking into it.';
+                try {
+                    const message = await user.send(errorContent);
+                    return message;
+                } catch (e) {
+                    const content = `It looks like bot does not have permission to DM <@${user.id}>.\n \n` +
+                        '**Message** \n' +
+                        errorContent;
+                    const message = await reaction.message.channel.send({ content });
+                    return message;
+                }
             }
         }
     }
