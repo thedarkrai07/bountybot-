@@ -372,6 +372,17 @@ const BountyUtils = {
 
         const isDraftBounty = (bounty.status == BountyStatus.draft)
         const createdAt = new Date(bounty.createdAt);
+
+        const actionComponent = actions.map(a => 
+            new MessageButton().setEmoji(a).setStyle('SECONDARY').setCustomId(a)
+        );
+
+        if (!isDraftBounty && !!customer.lastListMessage) {
+            actionComponent.push(
+                new MessageButton().setLabel('Back to List').setStyle('LINK').setURL(customer.lastListMessage)
+            );
+        }
+
         
         let cardEmbeds: MessageOptions = {
             embeds: [{
@@ -387,27 +398,13 @@ const BountyUtils = {
                 footer: footer,
                 color: color,
             }],
-            components: actions.length ? [
-                new MessageActionRow().addComponents(
-                    actions.map(a => 
-                        new MessageButton().setEmoji(a).setStyle('SECONDARY').setCustomId(a)
-                    )
-                )
+            components: actionComponent.length ? [
+                new MessageActionRow().addComponents(actionComponent)
             ]
             :
             [],
         };
-        if (!isDraftBounty && !!customer.lastListMessage) {
-            cardEmbeds.components.push({
-                type: 1, //Action Row
-                components: [{
-                    type: 2,
-                    label: "Back to List",
-                    style: 5,
-                    url: customer.lastListMessage,
-                }]
-            });
-        }
+        
 
         // Create/Update the card
         let cardMessage: Message;

@@ -26,8 +26,7 @@ export default class implements DiscordEvent {
 
     async execute(interaction: ButtonInteraction): Promise<any> {
         const user: User = interaction.user;
-        if (interaction.isCommand()) return;
-        
+        if (!interaction.isButton()) return;
         if (user.bot) {
             // Log.info('Bot detected.');
             return;
@@ -206,30 +205,14 @@ export default class implements DiscordEvent {
                 // TO-DO: Consider adding a User (tag, id) metadata field to logging objects
                 Log.info(`${user.tag} submitted a request that failed validation`);
                 const errorContent = e.message;
-                try {
-                    const message =  await user.send(`<@${user.id}>\n` + errorContent);
-                    return message;
-                } catch (e) {
-                    const content = `It looks like bot does not have permission to DM <@${user.id}>.\n \n` +
-                        '**Message** \n' +
-                        errorContent;
-                    const message = await interaction.reply({ content, ephemeral: true });
-                    return message;
-                }
+                const message = await interaction.reply({ content: errorContent, ephemeral: true  });
+                return message;
             } else if (e instanceof AuthorizationError) {
                 Log.info(`${user.tag} submitted a request that failed authorization`);
                 const errorContent = e.message;
-                try {
-                    const message = await user.send(`<@${user.id}>\n` + errorContent);
-                    return message;
-                } catch (e) {
-                    const content = `It looks like bot does not have permission to DM <@${user.id}>.\n \n` +
-                        '**Message** \n' +
-                        errorContent;
-                    const message = await interaction.reply({ content, ephemeral: true });
-                    return message;
+                const message = await interaction.reply({ content: errorContent, ephemeral: true });
 
-                }
+                return message;
             } else if (e instanceof NotificationPermissionError) {
                 return ErrorUtils.sendToDefaultChannel(e.message, request);
             } else if (e instanceof DMPermissionError) {
@@ -242,16 +225,8 @@ export default class implements DiscordEvent {
             else {
                 LogUtils.logError('error', e);
                 const errorContent = 'Sorry something is not working and our devs are looking into it.';
-                try {
-                    const message = await user.send(errorContent);
-                    return message;
-                } catch (e) {
-                    const content = `It looks like bot does not have permission to DM <@${user.id}>.\n \n` +
-                        '**Message** \n' +
-                        errorContent;
-                    const message = await (interaction.message as Message).channel.send({ content });
-                    return message;
-                }
+                const message = await interaction.reply({ content: errorContent, ephemeral: true });
+                return message;
             }
         }
     }
