@@ -8,6 +8,7 @@ import { ListRequest } from '../../requests/ListRequest';
 import { CustomerCollection } from '../../types/bounty/CustomerCollection';
 import { BountyStatus } from '../../constants/bountyStatus';
 import { ConnectionVisibility } from 'discord-api-types';
+import DMPermissionError from '../../errors/DMPermissionError';
 
 const TOTAL_BOUNTY_LIMIT = 15;
 const BOUNTY_SEGMENT_LIMIT = 5;
@@ -135,7 +136,11 @@ export const listBounty = async (request: ListRequest): Promise<any> => {
 			await request.commandContext.delete();  // We're done
 		}
 	} else {  // List from a DM reaction
-		await listUser.send({ embeds: [listCard] });
+		try {
+			await listUser.send({ embeds: [listCard] });
+		} catch (e) {
+			throw new DMPermissionError(e);
+		}
 		await request.buttonInteraction.editReply({ content: 'Please check your DM for bounty list' })
 	}
 };

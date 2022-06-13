@@ -212,33 +212,27 @@ export default class implements DiscordEvent {
             await handler(request);
         }
         catch (e) {
-            if (e instanceof ValidationError) {
+            let errorContent = e.message;
+            if (e instanceof NotificationPermissionError) {
+                return ErrorUtils.sendToDefaultChannel(e.message, request);
+            } else if (e instanceof ValidationError) {
                 // TO-DO: Consider adding a User (tag, id) metadata field to logging objects
                 Log.info(`${user.tag} submitted a request that failed validation`);
-                const errorContent = e.message;
-                const message = await interaction.reply({ content: errorContent, ephemeral: true  });
-                return message;
             } else if (e instanceof AuthorizationError) {
                 Log.info(`${user.tag} submitted a request that failed authorization`);
-                const errorContent = e.message;
-                const message = await interaction.reply({ content: errorContent, ephemeral: true });
-
-                return message;
-            } else if (e instanceof NotificationPermissionError) {
-                return ErrorUtils.sendToDefaultChannel(e.message, request);
+            
             } else if (e instanceof DMPermissionError) {
-                const content = `It looks like bot does not have permission to DM <@${user.id}>.\n \n` +
+                Log.info(`${user.tag} submitted a request that failed DM`);
+                errorContent = `It looks like bot does not have permission to DM <@${user.id}>.\n \n` +
                     '**Message** \n' +
                     e.message;
-                const message = await interaction.reply({ content, ephemeral: true });
-                return message;
-            }
-            else {
+            } else {
                 LogUtils.logError('error', e);
-                const errorContent = 'Sorry something is not working and our devs are looking into it.';
-                const message = await interaction.reply({ content: errorContent, ephemeral: true });
-                return message;
+                errorContent = 'Sorry something is not working and our devs are looking into it.';
             }
+
+            if (interaction.deferred) return await interaction.editReply({ content: errorContent });
+            return await interaction.reply({ content: errorContent, ephemeral: true });
         }
     }
 }

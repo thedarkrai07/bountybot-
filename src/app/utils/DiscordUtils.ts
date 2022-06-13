@@ -4,7 +4,6 @@ import { CommandContext } from 'slash-create';
 import client from '../app';
 import { BountyEmbedFields } from '../constants/embeds';
 import ConflictingMessageException from '../errors/ConflictingMessageException';
-import DMPermissionError from '../errors/DMPermissionError';
 import NotificationPermissionError from '../errors/NotificationPermissionError';
 import RuntimeError from '../errors/RuntimeError';
 import TimeoutError from '../errors/TimeoutError';
