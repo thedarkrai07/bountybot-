@@ -81,6 +81,7 @@ export default class implements DiscordEvent {
                     message: message
                 },
                 clientSyncRequest: null,
+                buttonInteraction: interaction,
             });
         } else if (interaction.customId === '💰') {
             Log.info(`${user.tag} attempting to mark a bounty as paid ${bountyId} from the bounty board`);
@@ -89,7 +90,8 @@ export default class implements DiscordEvent {
                 messageReactionRequest: {
                     user: user,
                     message: message
-                }
+                },
+                buttonInteraction: interaction,
             });
         } else if (interaction.customId === '🙋') {
             Log.info(`${user.tag} attempting to apply for a bounty ${bountyId} from the bounty board`);
@@ -99,6 +101,7 @@ export default class implements DiscordEvent {
                     user: user,
                     message: message
                 },
+                buttonInteraction: interaction,
             });
 
         } else if (interaction.customId === '❌') {
@@ -117,6 +120,7 @@ export default class implements DiscordEvent {
                         activity: Activities.delete,
                         bot: user.bot
                     },
+                    buttonInteraction: interaction,
                 })
             }
             else if (message.channel instanceof TextChannel) {
@@ -127,6 +131,7 @@ export default class implements DiscordEvent {
                         message: message
                     },
                     directRequest: null,
+                    buttonInteraction: interaction,
                 });
             }
 
@@ -139,6 +144,7 @@ export default class implements DiscordEvent {
                     user: user,
                     message: message
                 },
+                buttonInteraction: interaction
             });
 
         } else if (interaction.customId === '✅') {
@@ -149,6 +155,7 @@ export default class implements DiscordEvent {
                     user: user,
                     message: message
                 },
+                buttonInteraction: interaction,
             });
 
         } else if (interaction.customId === '👷') {
@@ -160,6 +167,7 @@ export default class implements DiscordEvent {
                     user: user,
                     message: message
                 },
+                buttonInteraction: interaction,
             });
 
         } else if (interaction.customId === '📝') {
@@ -171,6 +179,7 @@ export default class implements DiscordEvent {
                     user: user,
                     message: message
                 },
+                buttonInteraction: interaction,
             });
 
         } else if (interaction.customId === '🔄') {
@@ -182,6 +191,7 @@ export default class implements DiscordEvent {
                     user: user,
                     message: message
                 },
+                buttonInteraction: interaction,
             });
 
         } else if (interaction.customId === '🆘') {
@@ -191,7 +201,8 @@ export default class implements DiscordEvent {
                 messageReactionRequest: {
                     user: user,
                     message: message
-                }
+                },
+                buttonInteraction: interaction,
             });
         } else {
             return;

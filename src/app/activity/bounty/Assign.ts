@@ -39,7 +39,7 @@ export const assignBounty = async (request: AssignRequest): Promise<any> => {
     `<${cardMessage.url}>`;
 
     await DiscordUtils.activityNotification(assignedContent, assignedUser);
-    await DiscordUtils.activityResponse(request.commandContext, assigningContent, assigningUser);
+    await DiscordUtils.activityResponse(request.commandContext, request.buttonInteraction, assigningContent);
     return;
 };
 

@@ -32,6 +32,8 @@ export const listBounty = async (request: ListRequest): Promise<any> => {
 	let listTitle: string;
 	let openTitle = "Open";
 
+	if (request.buttonInteraction && (listType || request.message)) await request.buttonInteraction.deferReply({ ephemeral: true });
+
 	switch (listType) { 
 	case 'CREATED_BY_ME':
 		dbRecords = bountyCollection.find({ 'createdBy.discordId': listUser.user.id, status: { $ne: 'Deleted' }, 'customerId': request.guildId }).sort({ status: -1, createdAt: -1 });
@@ -119,6 +121,7 @@ export const listBounty = async (request: ListRequest): Promise<any> => {
 		if (!!request.message) {  // List from a refresh reaction
 			listMessage = request.message;
 			await listMessage.edit({ embeds: [listCard], components: [componentActions] });
+			await request.buttonInteraction.editReply({ content: 'Bounty list refreshed successfully' });
 		} else {  // List from a slash command
 			const channel = await DiscordUtils.getTextChannelfromChannelId(request.commandContext.channelID);
 			listMessage = await channel.send({ embeds: [listCard], components: [componentActions] });
@@ -133,6 +136,7 @@ export const listBounty = async (request: ListRequest): Promise<any> => {
 		}
 	} else {  // List from a DM reaction
 		await listUser.send({ embeds: [listCard] });
+		await request.buttonInteraction.editReply({ content: 'Please check your DM for bounty list' })
 	}
 };
 
