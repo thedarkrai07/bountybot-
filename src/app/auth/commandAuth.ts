@@ -105,6 +105,9 @@ const publish = async (request: PublishRequest): Promise<void> => {
         _id: new mongo.ObjectId(request.bountyId),
     });
 
+    // Backwards campatibility with .gate usage
+    // If .gate is set, return that (it will be an array with a single value: [discordId])
+    // Otherwise, if .gateTo exists, return the discordIds from the contained objects ([discordId, discordId, discordId]). There should always be a discord Id in each object.
     const gate = (dbBountyResult.gate || (dbBountyResult.gateTo && dbBountyResult.gateTo.map( g => g.discordId)));
 
     if (gate && !(await DiscordUtils.hasAllowListedRole(request.userId, request.guildId, gate))) {

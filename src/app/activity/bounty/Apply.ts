@@ -41,9 +41,6 @@ export const applyBounty = async (request: ApplyRequest): Promise<any> => {
     
     const cardMessage = await BountyUtils.canonicalCard(appliedForBounty._id, request.activity);
 
-    // Update bounty with any web compatibility changes or conversions
-    BountyUtils.bountyCleanUp(appliedForBounty._id);
-
     const createdByUser: GuildMember = await applyingUser.guild.members.fetch(appliedForBounty.createdBy.discordId);
     let creatorDM = `Your bounty has been applied for by <@${applyingUser.id}> <${cardMessage.url}> \n` +
                         `Their pitch: ${pitch ? pitch : '<none given>'} \n` +

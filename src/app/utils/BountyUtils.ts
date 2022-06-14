@@ -575,6 +575,21 @@ const BountyUtils = {
             _id: new mongo.ObjectId(bountyId)
         });
 
+        const fixedBounty = await this.fixBounty(bounty);
+
+        await bountyCollection.replaceOne({ _id: new mongo.ObjectId(bounty._id) }, fixedBounty);
+
+        // If evergreen parent, fix last created child also
+        if (bounty.childrenIds) {
+            const childBounty: BountyCollection = await bountyCollection.findOne({
+            _id: new mongo.ObjectId(bounty.childrenIds[bounty.childrenIds.length -1])
+             });
+             await this.fixBounty(childBounty);
+        }
+    },
+
+    async fixBounty(bounty: BountyCollection): Promise<any> {
+    
         const customerId = bounty.customerId;
 
         // If the user avatar URLs are missing, this bounty was probably created on the web. Populate the URLs
@@ -610,7 +625,6 @@ const BountyUtils = {
             bounty.gateTo = [{discordId: gatedTo.id, discordName: gatedTo.name, iconUrl: gatedTo.iconURL() }];
         }
 
-        await bountyCollection.replaceOne({ _id: new mongo.ObjectId(bounty._id) }, bounty);
     },
 
 }

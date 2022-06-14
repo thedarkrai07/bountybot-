@@ -61,9 +61,6 @@ export const claimBounty = async (request: ClaimRequest): Promise<any> => {
     const parentBountyChannel = !parentBounty || !parentBounty.canonicalCard ? undefined : await DiscordUtils.getTextChannelfromChannelId(parentBounty.canonicalCard.channelId);
     const claimedBountyCard = await BountyUtils.canonicalCard(claimedBounty._id, request.activity, parentBountyChannel);
 
-    // Update bounty with any web compatibility changes or conversions
-    BountyUtils.bountyCleanUp(claimedBounty._id);
-
     let creatorNotification = 
     `Your bounty has been claimed by <@${claimedByUser.user.id}> <${claimedBountyCard.url}>\n` +
     `You are free to mark this bounty as complete and/or paid at any time.\n` +
@@ -71,8 +68,6 @@ export const claimBounty = async (request: ClaimRequest): Promise<any> => {
     if (getDbResult.dbBountyResult.evergreen) {
         const parentBountyUrl = process.env.BOUNTY_BOARD_URL + parentBounty._id;
         const parentBountyCard = await BountyUtils.canonicalCard(parentBounty._id, request.activity);
-        // Update bounty with any web compatibility changes or conversions
-        BountyUtils.bountyCleanUp(parentBounty._id);
         if (parentBounty.status == BountyStatus.open) {
             creatorNotification += `\nSince you marked your original bounty as multi-claimant, it will stay on the board as Open. <${parentBountyCard.url}>`;
         } else {
