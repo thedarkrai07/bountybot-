@@ -625,6 +625,7 @@ const BountyUtils = {
             bounty.gateTo = [{discordId: gatedTo.id, discordName: gatedTo.name, iconUrl: gatedTo.iconURL() }];
         }
 
+        return bounty;
     },
 
 }
