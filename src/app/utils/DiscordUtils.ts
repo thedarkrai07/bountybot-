@@ -185,6 +185,7 @@ const DiscordUtils = {
     },
 
     getBountyIdFromEmbedMessage(message: Message): string {
+        if (message.embeds[0].fields[BountyEmbedFields.bountyId].name !== 'Bounty Id') return null;
         return message.embeds[0].fields[BountyEmbedFields.bountyId].value;
     },
 }
