@@ -17,14 +17,7 @@ export class RefreshRequest extends Request {
         messageReactionRequest: MessageReactionRequest,
         buttonInteraction: ButtonInteraction,
     }) {
-        if (args.commandContext) {
-            if (args.commandContext.subcommands[0] !== Activities.apply) {
-                throw new Error('ApplyRequest attempted created for non Apply activity.');
-            }
-            super(args.commandContext.subcommands[0], args.commandContext.guildID, args.commandContext.user.id, args.commandContext.user.bot);
-            this.commandContext = args.commandContext;
-            this.bountyId = args.commandContext.options.apply['bounty-id'];
-        } else if (args.messageReactionRequest) {
+        if (args.messageReactionRequest) {
             const messageReactionRequest: MessageReactionRequest = args.messageReactionRequest;
             super(Activities.refresh, messageReactionRequest.message.guildId, messageReactionRequest.user.id, messageReactionRequest.user.bot);
             this.message = messageReactionRequest.message;
