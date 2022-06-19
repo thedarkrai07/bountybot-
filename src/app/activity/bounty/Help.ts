@@ -35,7 +35,7 @@ export const helpBounty = async (request: HelpRequest): Promise<void> => {
             `<${bountyUrl}>`;
         
         await bountyCreator.send({ content: creatorHelpDM});
-        await helpRequestedUser.send({ content: userHelpDM });
+        await DiscordUtils.activityResponse(request.commandContext, request.buttonInteraction, userHelpDM);
     } else {
         const bountyChannel: TextChannel = await client.channels.fetch(request.commandContext.channelID) as TextChannel;
     

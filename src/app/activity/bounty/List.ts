@@ -1,6 +1,6 @@
 import MongoDbUtils  from '../../utils/MongoDbUtils';
 import mongo, { Cursor, Db, UpdateWriteOpResult } from 'mongodb';
-import { Message, MessageEmbedOptions } from 'discord.js';
+import { Message, MessageActionRow, MessageButton, MessageEmbedOptions } from 'discord.js';
 import Log from '../../utils/Log';
 import { BountyCollection } from '../../types/bounty/BountyCollection';
 import DiscordUtils from '../../utils/DiscordUtils';
@@ -8,6 +8,7 @@ import { ListRequest } from '../../requests/ListRequest';
 import { CustomerCollection } from '../../types/bounty/CustomerCollection';
 import { BountyStatus } from '../../constants/bountyStatus';
 import { ConnectionVisibility } from 'discord-api-types';
+import DMPermissionError from '../../errors/DMPermissionError';
 
 const TOTAL_BOUNTY_LIMIT = 15;
 const BOUNTY_SEGMENT_LIMIT = 5;
@@ -31,6 +32,8 @@ export const listBounty = async (request: ListRequest): Promise<any> => {
 
 	let listTitle: string;
 	let openTitle = "Open";
+
+	if (request.buttonInteraction && (listType || request.message)) await request.buttonInteraction.deferReply({ ephemeral: true });
 
 	switch (listType) { 
 	case 'CREATED_BY_ME':
@@ -113,13 +116,16 @@ export const listBounty = async (request: ListRequest): Promise<any> => {
 	listCard.footer = { text: footerText };
 	let listMessage: Message;
 	if (!listType) {
+		const componentActions = new MessageActionRow().addComponents(['👷', '📝', '🔄'].map(a => 
+			new MessageButton().setEmoji(a).setStyle('SECONDARY').setCustomId(a)
+		))
 		if (!!request.message) {  // List from a refresh reaction
 			listMessage = request.message;
-			await listMessage.edit({ embeds: [listCard] });
-			await listMessage.reactions.removeAll();
+			await listMessage.edit({ embeds: [listCard], components: [componentActions] });
+			await request.buttonInteraction.editReply({ content: 'Bounty list refreshed successfully' });
 		} else {  // List from a slash command
 			const channel = await DiscordUtils.getTextChannelfromChannelId(request.commandContext.channelID);
-			listMessage = await channel.send({ embeds: [listCard] });
+			listMessage = await channel.send({ embeds: [listCard], components: [componentActions] });
 			if (request.commandContext.channelID == dbCustomerResult.bountyChannel) {
 				const writeResult: UpdateWriteOpResult = await customerCollection.updateOne( {customerId: request.guildId}, {
 					$set: {
@@ -129,12 +135,13 @@ export const listBounty = async (request: ListRequest): Promise<any> => {
 			}
 			await request.commandContext.delete();  // We're done
 		}
-		await listMessage.react('👷');
-		await listMessage.react('📝');
-		await listMessage.react('🔄');
-
 	} else {  // List from a DM reaction
-		await listUser.send({ embeds: [listCard] });
+		try {
+			await listUser.send({ embeds: [listCard] });
+		} catch (e) {
+			throw new DMPermissionError(e);
+		}
+		await request.buttonInteraction.editReply({ content: 'Please check your DM for bounty list' })
 	}
 };
 

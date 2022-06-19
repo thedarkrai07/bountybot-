@@ -1,10 +1,9 @@
-import { AwaitMessagesOptions, Collection, DMChannel, Guild, GuildMember, Message, Role, Snowflake, TextChannel } from 'discord.js';
+import { AwaitMessagesOptions, ButtonInteraction, Collection, DMChannel, Guild, GuildMember, Message, Role, Snowflake, TextChannel } from 'discord.js';
 import { Db } from 'mongodb';
 import { CommandContext } from 'slash-create';
 import client from '../app';
 import { BountyEmbedFields } from '../constants/embeds';
 import ConflictingMessageException from '../errors/ConflictingMessageException';
-import DMPermissionError from '../errors/DMPermissionError';
 import NotificationPermissionError from '../errors/NotificationPermissionError';
 import RuntimeError from '../errors/RuntimeError';
 import TimeoutError from '../errors/TimeoutError';
@@ -150,17 +149,11 @@ const DiscordUtils = {
     },
 
     // Send a response to a command (use ephemeral) or a reaction (use DM)
-    async activityResponse(commandContext: CommandContext, content: string, toUser: GuildMember): Promise<void> {
-        if (!!commandContext) { // This was a slash command
+    async activityResponse(commandContext: CommandContext, buttonInteraction: ButtonInteraction, content: string): Promise<void> {
+        if (!!commandContext) // This was a slash command
             await commandContext.send({ content: content, ephemeral: true });
-            // await commandContext.delete();
-        } else {  // This was a reaction or a DB event
-            try {
-                await toUser.send(content);
-            } catch (e) {
-                throw new DMPermissionError(content)
-            }
-        }
+        else // This was a button itneraction
+            await buttonInteraction.reply({ content: content, ephemeral: true });
     },
 
     // Send a notification to an interested party (use a DM)
@@ -192,6 +185,7 @@ const DiscordUtils = {
     },
 
     getBountyIdFromEmbedMessage(message: Message): string {
+        if (message.embeds[0].fields[BountyEmbedFields.bountyId].name !== 'Bounty Id') return null;
         return message.embeds[0].fields[BountyEmbedFields.bountyId].value;
     },
 }

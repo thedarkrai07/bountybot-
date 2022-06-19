@@ -47,7 +47,7 @@ export const applyBounty = async (request: ApplyRequest): Promise<any> => {
                         'Use the "/bounty assign" command to select an applicant who can claim.';
 
     await DiscordUtils.activityNotification(creatorDM, createdByUser);
-    await DiscordUtils.activityResponse(request.commandContext, `<@${applyingUser.user.id}>, You have applied for this bounty! Reach out to <@${createdByUser.id}> with any questions: ${cardMessage.url}`, applyingUser);
+    await DiscordUtils.activityResponse(request.commandContext, request.buttonInteraction, `<@${applyingUser.user.id}>, You have applied for this bounty! Reach out to <@${createdByUser.id}> with any questions: ${cardMessage.url}`);
     return;
 };
 
