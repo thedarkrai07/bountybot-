@@ -71,7 +71,7 @@ export const listBounty = async (request: ListRequest): Promise<any> => {
 			bountyList[record.status] = {};
 			bountyList[record.status]._index = 0;
 		}
-		bountyList[record.status][bountyList[record.status]._index++] = await generateBountyFieldSegment(record, cardMessage);
+		bountyList[record.status][bountyList[record.status]._index++] = await generateBountyFieldSegment(record, cardMessage, listType);
 		listCount++;
 		moreRecords = await dbRecords.hasNext();  // Put here because we can only call once otherwise cursor is closed.
 	}
@@ -138,19 +138,40 @@ export const listBounty = async (request: ListRequest): Promise<any> => {
 	}
 };
 
-export const generateBountyFieldSegment = async (bountyRecord: BountyCollection, cardMessage: Message): Promise<any> => {
+export const generateBountyFieldSegment = async (bountyRecord: BountyCollection, cardMessage: Message, listType: string): Promise<any> => {
 	const url = !!cardMessage ? cardMessage.url : process.env.BOUNTY_BOARD_URL + bountyRecord._id
 	let forString = '';
-	if (bountyRecord.gate) {
-		const role = await DiscordUtils.getRoleFromRoleId(bountyRecord.gate[0], bountyRecord.customerId);
-		forString = `claimable by role ${role ? role.name : "<missing role>"}`;
-	} else if (bountyRecord.assign) {
-		const assignedUser = await DiscordUtils.getGuildMemberFromUserId(bountyRecord.assign, bountyRecord.customerId);
-		forString = `claimable by user ${assignedUser ? assignedUser.user.tag : "<missing user>"}`;
+
+	if (bountyRecord.claimedBy) {
+		let claimedByMeMetadata = getClaimedByMeMetadata(bountyRecord, listType);
+		forString = claimedByMeMetadata ?  claimedByMeMetadata : `claimed by @${bountyRecord.claimedBy.discordHandle}`;
 	} else {
-		forString = 'claimable by anyone';
-	}	
+	  if (bountyRecord.gate) {
+			const role = await DiscordUtils.getRoleFromRoleId(bountyRecord.gate[0], bountyRecord.customerId);
+			forString = `claimable by role ${role ? role.name : "<missing role>"}`;
+		} else if (bountyRecord.assign) {
+			const assignedUser = await DiscordUtils.getGuildMemberFromUserId(bountyRecord.assign, bountyRecord.customerId);
+			forString = `claimable by user ${assignedUser ? assignedUser.user.tag : "<missing user>"}`;
+		} else {
+			forString = 'claimable by anyone';
+		}	
+	}
+	
 	return (
 		`> [${bountyRecord.title}](${url}) ${forString} **${bountyRecord.reward.amount + ' ' + bountyRecord.reward.currency.toUpperCase()}**\n`
 	);
+};
+
+const getClaimedByMeMetadata = (record: BountyCollection, listType: string) => {
+	let text = '';
+	
+	if (listType === 'CLAIMED_BY_ME') {
+		  if (record.status === BountyStatus.complete) {
+				text = `payment is ${record.paidStatus.toUpperCase()}`;
+			} else if (record.status === BountyStatus.in_progress || record.status === BountyStatus.in_review) {
+				text = `is due on ${new Date (record.dueAt).toLocaleDateString()}`;
+			}
+		}
+		
+	return text;
 };
