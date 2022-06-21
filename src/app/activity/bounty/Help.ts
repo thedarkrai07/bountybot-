@@ -24,7 +24,7 @@ export const helpBounty = async (request: HelpRequest): Promise<void> => {
 
         const bountyCreator: GuildMember = await DiscordUtils.getGuildMemberFromUserId(getDbResult.dbBountyResult.createdBy.discordId, request.guildId)
         
-        const bountyUrl = request.message.url;
+        const bountyUrl = request.message.url || (process.env.BOUNTY_BOARD_URL + request.bountyId);
         const creatorHelpDM = 
             `<@${helpRequestedUser.id}> has requested help with the following bounty:\n` +
             `<${bountyUrl}>\n` + 
