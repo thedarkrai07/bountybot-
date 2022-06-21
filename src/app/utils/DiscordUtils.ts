@@ -152,8 +152,10 @@ const DiscordUtils = {
     async activityResponse(commandContext: CommandContext, buttonInteraction: ButtonInteraction, content: string): Promise<void> {
         if (!!commandContext) // This was a slash command
             await commandContext.send({ content: content, ephemeral: true });
-        else // This was a button itneraction
-            await buttonInteraction.reply({ content: content, ephemeral: true });
+        else {// This was a button itneraction
+            if (buttonInteraction.deferred || buttonInteraction.replied) await buttonInteraction.editReply({ content: content });
+            else await buttonInteraction.reply({ content: content, ephemeral: true });
+        }
     },
 
     // Send a notification to an interested party (use a DM)
