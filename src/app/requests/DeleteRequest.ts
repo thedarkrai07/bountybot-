@@ -50,6 +50,7 @@ export class DeleteRequest extends Request {
         else if (args.directRequest) {
             super(args.directRequest.activity, args.directRequest.guildId, args.directRequest.userId, args.directRequest.bot);
             this.bountyId = args.directRequest.bountyId;
+            this.buttonInteraction = args.buttonInteraction;
             this.resolutionNote = args.directRequest.resolutionNote;
 
         }

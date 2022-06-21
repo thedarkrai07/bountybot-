@@ -21,9 +21,11 @@ export const claimBounty = async (request: ClaimRequest): Promise<any> => {
     Log.info(`${request.bountyId} bounty claimed by ${claimedByUser.user.tag}`);
 
     if (! (await BountyUtils.isUserWalletRegistered(request.userId))) {
+        const gotoDMMessage = 'Go to your DMs to finish claiming the bounty...';
         if (request.commandContext) {
-            const gotoDMMessage = 'Go to your DMs to finish claiming the bounty...';
             await request.commandContext.send({ content: gotoDMMessage, ephemeral: true});
+        } else if (request.buttonInteraction) {
+            await request.buttonInteraction.reply({ content: gotoDMMessage, ephemeral: true })
         }
         
         const durationMinutes = 2;
