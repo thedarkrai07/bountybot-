@@ -26,6 +26,11 @@ export const applyBounty = async (request: ApplyRequest): Promise<any> => {
         errors: ['time'],
     };
 
+    const gotoDMMessage = 'Go to your DMs to finish appplying for the bounty...';
+    if (request.buttonInteraction) {
+        await request.buttonInteraction.reply({ content: gotoDMMessage, ephemeral: true })
+    }
+
     const pitch = await DiscordUtils.awaitUserDM(dmChannel, replyOptions);
     try {
         BountyUtils.validatePitch(pitch);

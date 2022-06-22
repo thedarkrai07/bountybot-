@@ -56,6 +56,12 @@ export default class implements DiscordEvent {
         const bountyId: string = DiscordUtils.getBountyIdFromEmbedMessage(message);
         let request: any;
 
+        const deferTimeout = setTimeout(async ()=> {
+            if (!interaction.replied && !interaction.deferred) 
+                await interaction.deferReply({ ephemeral: true })
+            clearTimeout(deferTimeout);
+        }, 2000);
+
         if (interaction.customId === '👍') {
             Log.info(`${user.tag} attempting to publish bounty ${bountyId}`);
             const guildId = message.embeds[0].author.name.split(': ')[1];
@@ -231,7 +237,7 @@ export default class implements DiscordEvent {
                 errorContent = 'Sorry something is not working and our devs are looking into it.';
             }
 
-            if (interaction.deferred) return await interaction.editReply({ content: errorContent });
+            if (interaction.deferred || interaction.replied) return await interaction.editReply({ content: errorContent });
             return await interaction.reply({ content: errorContent, ephemeral: true });
         }
     }
