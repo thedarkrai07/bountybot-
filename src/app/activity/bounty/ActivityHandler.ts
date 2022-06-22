@@ -114,13 +114,4 @@ export const BountyActivityHandler = {
         }
         return;
     },
-
-
-    async getGuildAndMember(ctx: CommandContext): Promise<{ guild: Guild, guildMember: GuildMember }> {
-        const guild = await client.guilds.fetch(ctx.guildID);
-        return {
-            guild: guild,
-            guildMember: await guild.members.fetch(ctx.user.id),
-        };
-    }
 }
