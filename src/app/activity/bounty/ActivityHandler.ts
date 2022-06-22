@@ -34,6 +34,8 @@ import DiscordUtils from '../../utils/DiscordUtils';
 import { GmRequest } from '../../requests/GmRequest'
 import { UpsertUserWalletRequest } from '../../requests/UpsertUserWalletRequest'
 import { TagRequest } from '../../requests/TagRequest'
+import { refreshBounty } from './Refresh'
+import { RefreshRequest } from '../../requests/RefreshRequest'
 
 export const BountyActivityHandler = {
     /**
@@ -48,6 +50,16 @@ export const BountyActivityHandler = {
 
         Log.debug('Reached Activity Handler')
         Log.debug(request.activity)
+
+        if (request.commandContext) {
+            // If bot is not able to reply within 2 secs, defer reply
+            setTimeout(() =>{
+                if (!request.commandContext.initiallyResponded) {
+                    request.commandContext.defer();
+                }
+            }, 2000)
+        }
+
         // TODO in all activities, replace any use of request.commandContext with cherry picked fields 
         //      from the commandContext object as top level fields of the [Activity]Request class
         switch (request.activity) {
@@ -89,6 +101,9 @@ export const BountyActivityHandler = {
                 break;
             case Activities.tag:
                 await tagBounty(request as TagRequest);
+                break;
+            case Activities.refresh:
+                await refreshBounty(request as RefreshRequest);
                 break;
             case 'gm':
                 let gmRequest: GmRequest = request;

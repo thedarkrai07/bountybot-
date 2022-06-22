@@ -61,6 +61,8 @@ const AuthorizationModule = {
                 return;
             case Activities.tag:
                 return tag(request as TagRequest)
+            case Activities.refresh:
+                return;
 			case 'gm':
                 return;
         }

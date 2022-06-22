@@ -21,9 +21,11 @@ export const claimBounty = async (request: ClaimRequest): Promise<any> => {
     Log.info(`${request.bountyId} bounty claimed by ${claimedByUser.user.tag}`);
 
     if (! (await BountyUtils.isUserWalletRegistered(request.userId))) {
+        const gotoDMMessage = 'Go to your DMs to finish claiming the bounty...';
         if (request.commandContext) {
-            const gotoDMMessage = 'Go to your DMs to finish claiming the bounty...';
             await request.commandContext.send({ content: gotoDMMessage, ephemeral: true});
+        } else if (request.buttonInteraction) {
+            await request.buttonInteraction.reply({ content: gotoDMMessage, ephemeral: true })
         }
         
         const durationMinutes = 2;
@@ -80,7 +82,7 @@ export const claimBounty = async (request: ClaimRequest): Promise<any> => {
     await DiscordUtils.activityNotification(creatorNotification, createdByUser);
 
     const claimaintResponse = `<@${claimedByUser.user.id}>, you have claimed this bounty! Reach out to <@${createdByUser.user.id}> with any questions: <${claimedBountyCard.url}>`;
-    await DiscordUtils.activityResponse(request.commandContext, claimaintResponse , claimedByUser);
+    await DiscordUtils.activityResponse(request.commandContext, request.buttonInteraction, claimaintResponse);
     
     return;
 };

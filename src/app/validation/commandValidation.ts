@@ -57,6 +57,8 @@ const ValidationModule = {
                 return registerWallet(request as UpsertUserWalletRequest);
             case Activities.tag:
                 return tag(request as TagRequest);
+            case Activities.refresh:
+                return;
             case 'gm':
                 return;
             default:
