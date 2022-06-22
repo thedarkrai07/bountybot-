@@ -56,12 +56,6 @@ export default class implements DiscordEvent {
         const bountyId: string = DiscordUtils.getBountyIdFromEmbedMessage(message);
         let request: any;
 
-        const deferTimeout = setTimeout(async ()=> {
-            if (!interaction.replied && !interaction.deferred) 
-                await interaction.deferReply({ ephemeral: true })
-            clearTimeout(deferTimeout);
-        }, 2000);
-
         if (interaction.customId === '👍') {
             Log.info(`${user.tag} attempting to publish bounty ${bountyId}`);
             const guildId = message.embeds[0].author.name.split(': ')[1];
