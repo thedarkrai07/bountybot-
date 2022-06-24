@@ -231,7 +231,7 @@ export default class implements DiscordEvent {
                 errorContent = 'Sorry something is not working and our devs are looking into it.';
             }
 
-            if (interaction.deferred) return await interaction.editReply({ content: errorContent });
+            if (interaction.deferred || interaction.replied) return await interaction.editReply({ content: errorContent });
             return await interaction.reply({ content: errorContent, ephemeral: true });
         }
     }
