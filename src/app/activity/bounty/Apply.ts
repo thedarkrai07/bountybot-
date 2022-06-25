@@ -44,7 +44,7 @@ export const applyBounty = async (request: ApplyRequest): Promise<any> => {
     const appliedForBounty = await writeDbHandler(request, getDbResult.dbBountyResult, applyingUser, pitch);
     
     const cardMessage = await BountyUtils.canonicalCard(appliedForBounty._id, request.activity);
-    
+
     const createdByUser: GuildMember = await applyingUser.guild.members.fetch(appliedForBounty.createdBy.discordId);
     let creatorDM = `Your bounty has been applied for by <@${applyingUser.id}> <${cardMessage.url}> \n` +
                         `Their pitch: ${pitch ? pitch : '<none given>'} \n` +
@@ -93,6 +93,7 @@ const writeDbHandler = async (request: ApplyRequest, appliedForBounty: BountyCol
             applicants: {
                 discordId: applyingUser.user.id,
                 discordHandle: applyingUser.user.tag,
+                iconUrl: applyingUser.user.avatarURL(),
                 pitch: pitch,
             },
         },

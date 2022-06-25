@@ -30,7 +30,7 @@ export const publishBounty = async (publishRequest: PublishRequest): Promise<any
 		await guildMember.client.channels.fetch(dbCustomerResult.bountyChannel) as TextChannel;
 	const bountyMessage: Message = await BountyUtils.canonicalCard(dbBountyResult._id, publishRequest.activity, bountyChannel, guildMember);
 	await DiscordUtils.activityResponse(publishRequest.commandContext, publishRequest.buttonInteraction,  `Bounty published to \`${(bountyMessage.channel as any).name || bountyChannel.name}\` <${bountyMessage.url}> and the website! <${process.env.BOUNTY_BOARD_URL}${bountyId}>`);
-	
+
 	Log.info(`bounty published to ${(bountyMessage.channel as any).name || bountyChannel.name}`);
 
 	// Remove old publish preview

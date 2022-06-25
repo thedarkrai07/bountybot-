@@ -2,6 +2,7 @@ import AuthorizationModule from "../../auth/commandAuth";
 import ValidationModule from "../../validation/commandValidation";
 import { BountyActivityHandler } from "./ActivityHandler";
 import Log from '../../utils/Log';
+import BountyUtils from "../../utils/BountyUtils";
 
 /**
  * handler is responsible for the flow of any activity request.
@@ -27,4 +28,6 @@ export const handler = async (request: any): Promise<void> => {
     await AuthorizationModule.run(request);
 
     await BountyActivityHandler.run(request);
+
+    if (request.bountyId) await BountyUtils.bountyCleanUp(request.bountyId);
 }

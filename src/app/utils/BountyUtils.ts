@@ -250,9 +250,13 @@ const BountyUtils = {
                 title += '\n(Infinite claims available)';
             }
         }
-        if (bountyRecord.assign) {
+        if (bountyRecord.assignTo) {
+            title += `\n(For user ${bountyRecord.assignTo.discordHandle})`
+        } else if (bountyRecord.assign) {  //assign is deprecated, replaced by assignTo
             title += `\n(For user ${bountyRecord.assignedName})`
-        } else if (bountyRecord.gate) {
+        } else if (bountyRecord.gateTo) {
+            title += `\n(For role ${bountyRecord.gateTo[0].discordName})`;  
+        } else if (bountyRecord.gate) {  // deprecated, repalced by gateTo
             const role: Role = await DiscordUtils.getRoleFromRoleId(bountyRecord.gate[0], bountyRecord.customerId);
             title += `\n(For role ${role.name})`;
         } else if (bountyRecord.isIOU) {
@@ -297,11 +301,15 @@ const BountyUtils = {
             { name: 'Deadline', value: BountyUtils.formatDisplayDate(bounty.dueAt), inline: true },
             { name: 'Created by', value: bounty.createdBy.discordHandle.toString(), inline: true }
         ];
-        if (bounty.gate) {
+        if (bounty.gateTo) {
+            fields.push({ name: 'For role', value: bounty.gateTo[0].discordName, inline: false })
+        } else if (bounty.gate) {  // deprecated, replaced by gateTo
             const role = await DiscordUtils.getRoleFromRoleId(bounty.gate[0], bounty.customerId);
             fields.push({ name: 'For role', value: role.name, inline: false })
         }
-        if (bounty.assign) {
+        if (bounty.assignTo) {
+            fields.push({ name: 'For user', value: bounty.assignTo.discordHandle, inline: false })
+        } else if (bounty.assign) {  // assign is deprecated, replaced by assignTo
             const assignedUser = await DiscordUtils.getGuildMemberFromUserId(bounty.assign, bounty.customerId);
             fields.push({ name: 'For user', value: assignedUser.user.tag, inline: false })
         }
@@ -318,7 +326,7 @@ const BountyUtils = {
                 actions.push('❌');
                 break;
             case BountyStatus.open:
-                if (bounty.requireApplication && (!bounty.assign)) {
+                if (bounty.requireApplication && (!bounty.assign) && (!bounty.assignTo)) {
                     footer = { text: '🙋 - apply | ❌ - delete', };
                     actions.push('🙋');
                 } else {
@@ -560,7 +568,74 @@ const BountyUtils = {
         });
 
         return customer.lastListMessage;
-    }
+    },
+
+    // bountyCleanUp 
+    //  This is the place to add any db record conversions or other schema or data changes that can be done over time,
+    //  and to add data that the web front end might not have access to.
+    //
+    //  It will be called after each activity that affects a bounty record.
+    //
+    async bountyCleanUp(bountyId: string): Promise<any> {
+        const db: Db = await MongoDbUtils.connect('bountyboard');
+        const bountyCollection = db.collection('bounties');
+        const bounty: BountyCollection = await bountyCollection.findOne({
+            _id: new mongo.ObjectId(bountyId)
+        });
+
+        const fixedBounty = await this.fixBounty(bounty);
+
+        await bountyCollection.replaceOne({ _id: new mongo.ObjectId(bounty._id) }, fixedBounty);
+
+        // If evergreen parent, fix last created child also
+        if (bounty.childrenIds) {
+            const childBounty: BountyCollection = await bountyCollection.findOne({
+            _id: new mongo.ObjectId(bounty.childrenIds[bounty.childrenIds.length -1])
+             });
+             await this.fixBounty(childBounty);
+        }
+    },
+
+    async fixBounty(bounty: BountyCollection): Promise<any> {
+    
+        const customerId = bounty.customerId;
+
+        // If the user avatar URLs are missing, this bounty was probably created on the web. Populate the URLs
+        if (bounty.createdBy && !bounty.createdBy.iconUrl) {
+            bounty.createdBy.iconUrl = (await DiscordUtils.getGuildMemberFromUserId(bounty.createdBy.discordId, customerId)).user.avatarURL();
+        }
+        if (bounty.claimedBy && !bounty.claimedBy.iconUrl) {
+            bounty.claimedBy.iconUrl = (await DiscordUtils.getGuildMemberFromUserId(bounty.claimedBy.discordId, customerId)).user.avatarURL();
+        }
+        if (bounty.submittedBy && !bounty.submittedBy.iconUrl) {
+            bounty.submittedBy.iconUrl = (await DiscordUtils.getGuildMemberFromUserId(bounty.submittedBy.discordId, customerId)).user.avatarURL();
+        }
+        if (bounty.reviewedBy && !bounty.reviewedBy.iconUrl) {
+            bounty.reviewedBy.iconUrl = (await DiscordUtils.getGuildMemberFromUserId(bounty.reviewedBy.discordId, customerId)).user.avatarURL();
+        }
+        if (bounty.applicants) {
+            bounty.applicants.forEach( async (a, i) => {
+                if (!a.iconUrl) {
+                    bounty.applicants[i].iconUrl = (await DiscordUtils.getGuildMemberFromUserId(a.discordId, customerId)).user.avatarURL();
+                }
+            })
+        }
+
+        // If assignTo is missing, create it from the deprecated assign item
+        if (bounty.assign && !bounty.assignTo) {
+            const assignedUser = await DiscordUtils.getGuildMemberFromUserId(bounty.assign, customerId)
+            bounty.assignTo = {discordId: assignedUser.user.id, discordHandle: assignedUser.user.tag, iconUrl: assignedUser.user.avatarURL()};
+        }
+
+        // If gateTo is missing, create it from the deprecated gate item
+        if (bounty.gate && !bounty.gateTo) {
+            const gatedTo = await DiscordUtils.getRoleFromRoleId(bounty.gate[0], customerId)
+            bounty.gateTo = [{discordId: gatedTo.id, discordName: gatedTo.name, iconUrl: gatedTo.iconURL() }];
+        }
+
+        return bounty;
+    },
+
 }
 
 export default BountyUtils;
