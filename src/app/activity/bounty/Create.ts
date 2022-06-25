@@ -169,6 +169,8 @@ export const createBounty = async (createRequest: CreateRequest): Promise<any> =
                 }
             }
         }
+
+        await DiscordUtils.activityResponse(createRequest.commandContext, null, 'IOU created successfully');
     } else {
 
         const publishOrDeleteMessage =

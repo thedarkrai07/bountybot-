@@ -71,6 +71,7 @@ export default class implements DiscordEvent {
                     bot: user.bot
                 },
                 clientSyncRequest: null,
+                buttonInteraction: interaction,
             });
         } else if (interaction.customId === '🏴') {
             Log.info(`${user.tag} attempting to claim a bounty ${bountyId} from the bounty board`);
