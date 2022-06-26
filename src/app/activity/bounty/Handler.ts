@@ -19,7 +19,7 @@ export const handler = async (request: any): Promise<void> => {
         if (request.buttonInteraction && !(request.buttonInteraction.replied || request.buttonInteraction.deferred)) {
             await request.buttonInteraction.deferReply({ ephemeral: true }).catch(e => Log.debug(`Error: ${e.message}`));
         } else if (request.commandContext && !request.commandContext.initiallyResponded) {
-            await request.commandContext.defer(true);
+            await request.commandContext.defer();
         }
     }, 2000);
 
