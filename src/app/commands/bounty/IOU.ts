@@ -81,11 +81,9 @@ export default class IOU extends SlashCommand {
         }
         catch (e) {
             if (e instanceof ValidationError) {
-                await guildMember.send(`<@${commandContext.user.id}>\n` + e.message);
-                await commandContext.delete();
+                await DiscordUtils.activityResponse(commandContext, null, `<@${commandContext.user.id}>\n` + e.message);
             } else if (e instanceof AuthorizationError) {
-                await guildMember.send(`<@${commandContext.user.id}>\n` + e.message);
-                commandContext.delete();
+                await DiscordUtils.activityResponse(commandContext, null, `<@${commandContext.user.id}>\n` + e.message);
             } else if (e instanceof NotificationPermissionError) {
                 await ErrorUtils.sendToDefaultChannel(e.message, request);
             } else if (e instanceof DMPermissionError) {

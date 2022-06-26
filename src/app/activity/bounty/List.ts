@@ -33,8 +33,6 @@ export const listBounty = async (request: ListRequest): Promise<any> => {
 	let listTitle: string;
 	let openTitle = "Open";
 
-	if (request.buttonInteraction && (listType || request.message)) await request.buttonInteraction.deferReply({ ephemeral: true });
-
 	switch (listType) { 
 	case 'CREATED_BY_ME':
 		dbRecords = bountyCollection.find({ 'createdBy.discordId': listUser.user.id, status: { $ne: 'Deleted' }, 'customerId': request.guildId }).sort({ status: -1, createdAt: -1 });

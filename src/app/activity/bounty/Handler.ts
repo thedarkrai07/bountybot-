@@ -15,6 +15,14 @@ import BountyUtils from "../../utils/BountyUtils";
 export const handler = async (request: any): Promise<void> => {
     Log.debug(`In Handler: Bounty ID: ${request.bountyId} Actvity: ${request.activity}`);
 
+    setTimeout(async ()=> {
+        if (request.buttonInteraction && !(request.buttonInteraction.replied || request.buttonInteraction.deferred)) {
+            await request.buttonInteraction.deferReply({ ephemeral: true }).catch(e => Log.debug(`Error: ${e.message}`));
+        } else if (request.commandContext && !request.commandContext.initiallyResponded) {
+            await request.commandContext.defer(true);
+        }
+    }, 2000);
+
     await ValidationModule.run(request);
 
     await AuthorizationModule.run(request);

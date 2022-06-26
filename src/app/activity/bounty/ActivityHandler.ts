@@ -50,15 +50,7 @@ export const BountyActivityHandler = {
 
         Log.debug('Reached Activity Handler')
         Log.debug(request.activity)
-
-        if (request.commandContext) {
-            // If bot is not able to reply within 2 secs, defer reply
-            setTimeout(() =>{
-                if (!request.commandContext.initiallyResponded) {
-                    request.commandContext.defer();
-                }
-            }, 2000)
-        }
+     
 
         // TODO in all activities, replace any use of request.commandContext with cherry picked fields 
         //      from the commandContext object as top level fields of the [Activity]Request class

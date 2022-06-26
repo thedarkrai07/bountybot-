@@ -71,6 +71,7 @@ export default class implements DiscordEvent {
                     bot: user.bot
                 },
                 clientSyncRequest: null,
+                buttonInteraction: interaction,
             });
         } else if (interaction.customId === '🏴') {
             Log.info(`${user.tag} attempting to claim a bounty ${bountyId} from the bounty board`);
@@ -231,8 +232,7 @@ export default class implements DiscordEvent {
                 errorContent = 'Sorry something is not working and our devs are looking into it.';
             }
 
-            if (interaction.deferred || interaction.replied) return await interaction.editReply({ content: errorContent });
-            return await interaction.reply({ content: errorContent, ephemeral: true });
+            return await DiscordUtils.interactionResponse(interaction, errorContent);
         }
     }
 }

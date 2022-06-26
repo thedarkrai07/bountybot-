@@ -148,13 +148,22 @@ const DiscordUtils = {
         return messages.first();
     },
 
+    async interactionResponse(buttonInteraction: ButtonInteraction, content: string) {
+        try {
+            if (buttonInteraction.deferred || buttonInteraction.replied) await buttonInteraction.editReply({ content: content });
+            else await buttonInteraction.reply({ content: content, ephemeral: true });
+        } catch (e) {
+            if (e.code === 40060) await buttonInteraction.editReply({ content: content });
+            else throw new RuntimeError(e);
+        }
+    },
+
     // Send a response to a command (use ephemeral) or a reaction (use DM)
     async activityResponse(commandContext: CommandContext, buttonInteraction: ButtonInteraction, content: string): Promise<void> {
         if (!!commandContext) // This was a slash command
             await commandContext.send({ content: content, ephemeral: true });
         else {// This was a button itneraction
-            if (buttonInteraction.deferred || buttonInteraction.replied) await buttonInteraction.editReply({ content: content });
-            else await buttonInteraction.reply({ content: content, ephemeral: true });
+            await this.interactionResponse(buttonInteraction, content);
         }
     },
 
