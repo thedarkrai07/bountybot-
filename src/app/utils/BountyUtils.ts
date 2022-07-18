@@ -421,7 +421,7 @@ const BountyUtils = {
             cardMessage = await (await DiscordUtils.getGuildMemberFromUserId(bounty.createdBy.discordId, bounty.customerId)).send(cardEmbeds);
         } else {
             if (activity == Activities.publish) {  // Publishing. If the card exists, delete it - it was either in a DM or needs to be refreshed
-                if (!!bounty.canonicalCard) { // Nested try's are to properly catch Discord API errors
+                if (!!bounty.canonicalCard) { 
                     try {
                         const draftChannel = await DiscordUtils.getTextChannelfromChannelId(bounty.canonicalCard.channelId);
                         const draftCardMessage = await DiscordUtils.getMessagefromMessageId(bounty.canonicalCard.messageId, draftChannel);
@@ -438,7 +438,6 @@ const BountyUtils = {
                     cardMessage = await DiscordUtils.getMessagefromMessageId(bounty.canonicalCard.messageId, bountyChannel);
                     await cardMessage.edit(cardEmbeds);
                     await cardMessage.reactions.removeAll();
-                    bounty.canonicalCard = undefined;
                 } catch(e) {
                     bounty.canonicalCard = undefined;
                 }
