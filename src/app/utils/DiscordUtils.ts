@@ -162,7 +162,7 @@ const DiscordUtils = {
     async activityResponse(commandContext: CommandContext, buttonInteraction: ButtonInteraction, content: string): Promise<void> {
         if (!!commandContext) // This was a slash command
             await commandContext.send({ content: content, ephemeral: true });
-        else {// This was a button itneraction
+        else {// This was a button interaction
             await this.interactionResponse(buttonInteraction, content);
         }
     },

@@ -3,10 +3,12 @@ import { handler } from '../activity/bounty/Handler';
 import { BountyEmbedFields } from '../constants/embeds';
 import AuthorizationError from '../errors/AuthorizationError';
 import ValidationError from '../errors/ValidationError';
-import { RefreshRequest } from '../requests/RefreshRequest';
+import { PublishRequest } from '../requests/PublishRequest';
 import { DiscordEvent } from '../types/discord/DiscordEvent';
 import DiscordUtils from '../utils/DiscordUtils';
 import Log, { LogUtils } from '../utils/Log';
+import { Activities } from '../constants/activities';
+
 
 export default class implements DiscordEvent {
     name = 'messageReactionAdd';
@@ -58,16 +60,24 @@ export default class implements DiscordEvent {
         const bountyId: string = DiscordUtils.getBountyIdFromEmbedMessage(message);
         if (!bountyId) return;
 
+        const guildId = message.guildId ? message.guildId : message.embeds[0].author.name.split(': ')[1];
+
         let request: any;
 
         if (reaction.emoji.name === '🔄') {
-            Log.info(`${user.tag} attempting to refresh the list`);
-            request = new RefreshRequest({
+            Log.info(`${user.tag} attempting to refresh the bounty`);
+
+            request = new PublishRequest({
                 commandContext: null,
-                messageReactionRequest: {
-                    user: user,
-                    message: message
+                messageReactionRequest: null,
+                directRequest: {
+                    bountyId: bountyId,
+                    guildId: guildId,
+                    userId: user.id,
+                    activity: Activities.publish,
+                    bot: user.bot
                 },
+                clientSyncRequest: null,
                 buttonInteraction: null,
             });
         } else {

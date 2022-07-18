@@ -1,4 +1,3 @@
-import { CommandContext } from 'slash-create'
 import { createBounty } from './Create'
 import { publishBounty } from './Publish'
 import { applyBounty } from './Apply'
@@ -14,8 +13,6 @@ import { upsertUserWallet } from '../user/RegisterWallet';
 import { tagBounty } from './Tag';
 
 
-import { Guild, GuildMember } from 'discord.js';
-import client from '../../app';
 import Log from '../../utils/Log';
 
 import { CreateRequest } from '../../requests/CreateRequest'
@@ -34,8 +31,6 @@ import DiscordUtils from '../../utils/DiscordUtils';
 import { GmRequest } from '../../requests/GmRequest'
 import { UpsertUserWalletRequest } from '../../requests/UpsertUserWalletRequest'
 import { TagRequest } from '../../requests/TagRequest'
-import { refreshBounty } from './Refresh'
-import { RefreshRequest } from '../../requests/RefreshRequest'
 
 export const BountyActivityHandler = {
     /**
@@ -93,9 +88,6 @@ export const BountyActivityHandler = {
                 break;
             case Activities.tag:
                 await tagBounty(request as TagRequest);
-                break;
-            case Activities.refresh:
-                await refreshBounty(request as RefreshRequest);
                 break;
             case 'gm':
                 let gmRequest: GmRequest = request;
