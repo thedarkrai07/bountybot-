@@ -18,7 +18,7 @@ export const publishBounty = async (publishRequest: PublishRequest): Promise<any
 	const bountyId = publishRequest.bountyId;
 	const guildId = publishRequest.guildId;
 
-	Log.info(`starting to finalize bounty: ${publishRequest.bountyId} from guild: ${publishRequest.guildId}`);
+	Log.info(`starting to finalize bounty: ${bountyId} from guild: ${guildId}`);
 
 	const { guildMember } = await DiscordUtils.getGuildAndMember(publishRequest.guildId, publishRequest.userId);
 
