@@ -91,7 +91,7 @@ const publish = async (request: PublishRequest): Promise<void> => {
         _id: new mongo.ObjectId(request.bountyId),
     });
 
-    if (request.userId !== dbBountyResult.createdBy.discordId) {
+    if ((dbBountyResult.status == BountyStatus.draft ) && (request.userId !== dbBountyResult.createdBy.discordId)) {
         throw new AuthorizationError(
             `Thank you for giving bounty commands a try!\n` +
             `It looks like you don't have permission to ${request.activity} this bounty.\n` +

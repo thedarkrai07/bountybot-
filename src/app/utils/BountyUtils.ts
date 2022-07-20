@@ -420,20 +420,29 @@ const BountyUtils = {
         if (isDraftBounty) {  // If we are in Create (Draft) mode, put the card in the DM channel
             cardMessage = await (await DiscordUtils.getGuildMemberFromUserId(bounty.createdBy.discordId, bounty.customerId)).send(cardEmbeds);
         } else {
-            if (activity == Activities.publish) {  // Publishing. If the card exists, delete it - it was in a DM}
-                if (!!bounty.canonicalCard) {
-                    const draftChannel = await DiscordUtils.getTextChannelfromChannelId(bounty.canonicalCard.channelId);
-                    const draftCardMessage = await DiscordUtils.getMessagefromMessageId(bounty.canonicalCard.messageId, draftChannel);
-                    await draftCardMessage.delete();
-                    bounty.canonicalCard = undefined;
+            if (activity == Activities.publish) {  // Publishing. If the card exists, delete it - it was either in a DM or needs to be refreshed
+                if (!!bounty.canonicalCard) { 
+                    try {
+                        const draftChannel = await DiscordUtils.getTextChannelfromChannelId(bounty.canonicalCard.channelId);
+                        const draftCardMessage = await DiscordUtils.getMessagefromMessageId(bounty.canonicalCard.messageId, draftChannel);
+                        await draftCardMessage.delete();
+                    } catch(e) {
+                    } finally {
+                        bounty.canonicalCard = undefined;
+                    }
                 }
             }
-            if (!!bounty.canonicalCard) {  // If we still have an existing card, just edit it, remove old reactions
-                bountyChannel = await DiscordUtils.getTextChannelfromChannelId(bounty.canonicalCard.channelId);
-                cardMessage = await DiscordUtils.getMessagefromMessageId(bounty.canonicalCard.messageId, bountyChannel);
-                await cardMessage.edit(cardEmbeds);
-                await cardMessage.reactions.removeAll();
-            } else {  // Otherwise create it. Put it in the passed in channel, or customer channel by default
+            if (!!bounty.canonicalCard) {  // If we still have an existing card, try to just edit it, remove old reactions
+                try {
+                    bountyChannel = await DiscordUtils.getTextChannelfromChannelId(bounty.canonicalCard.channelId);
+                    cardMessage = await DiscordUtils.getMessagefromMessageId(bounty.canonicalCard.messageId, bountyChannel);
+                    await cardMessage.edit(cardEmbeds);
+                    await cardMessage.reactions.removeAll();
+                } catch(e) {
+                    bounty.canonicalCard = undefined;
+                }
+            } 
+            if (!bounty.canonicalCard) { // If we didn't have a card, or we had an error trying to access it, create it
                 if (!bountyChannel) bountyChannel = await DiscordUtils.getBountyChannelfromCustomerId(bounty.customerId);
                 try {
                     cardMessage = await bountyChannel.send(cardEmbeds);
