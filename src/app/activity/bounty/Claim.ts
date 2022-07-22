@@ -13,6 +13,7 @@ import { Clients } from '../../constants/clients';
 import { UserCollection } from '../../types/user/UserCollection';
 import ValidationError from '../../errors/ValidationError';
 import TimeoutError from '../../errors/TimeoutError';
+import DMPermissionError from '../../errors/DMPermissionError';
 
 export const claimBounty = async (request: ClaimRequest): Promise<any> => {
     Log.debug('In Claim activity');
@@ -21,16 +22,14 @@ export const claimBounty = async (request: ClaimRequest): Promise<any> => {
     Log.info(`${request.bountyId} bounty claimed by ${claimedByUser.user.tag}`);
 
     if (! (await BountyUtils.isUserWalletRegistered(request.userId))) {
-        if (request.commandContext) {
-            const gotoDMMessage = 'Go to your DMs to finish claiming the bounty...';
-            await request.commandContext.send({ content: gotoDMMessage, ephemeral: true});
-        }
+        const gotoDMMessage = 'Go to your DMs to finish claiming the bounty...';
+        await DiscordUtils.activityResponse(request.commandContext, request.buttonInteraction, gotoDMMessage);
         
         const durationMinutes = 2;
         const claimWalletMessage = `Hello <@${request.userId}>!\n` +
             `Please respond within 2 minutes.\n` +
             `To claim this bounty, please enter the ethereum wallet address (non-ENS) to receive the reward amount for this bounty`;
-        const walletNeededMessage: Message = await claimedByUser.send({ content: claimWalletMessage });
+        const walletNeededMessage: Message = await claimedByUser.send({ content: claimWalletMessage }).catch(() => { throw new DMPermissionError(claimWalletMessage) });
         const dmChannel: DMChannel = await walletNeededMessage.channel.fetch() as DMChannel;
         
         try {
@@ -80,7 +79,7 @@ export const claimBounty = async (request: ClaimRequest): Promise<any> => {
     await DiscordUtils.activityNotification(creatorNotification, createdByUser);
 
     const claimaintResponse = `<@${claimedByUser.user.id}>, you have claimed this bounty! Reach out to <@${createdByUser.user.id}> with any questions: <${claimedBountyCard.url}>`;
-    await DiscordUtils.activityResponse(request.commandContext, claimaintResponse , claimedByUser);
+    await DiscordUtils.activityResponse(request.commandContext, request.buttonInteraction, claimaintResponse);
     
     return;
 };

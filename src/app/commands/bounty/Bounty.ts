@@ -291,62 +291,73 @@ export default class Bounty extends SlashCommand {
                     commandContext: commandContext,
                     messageReactionRequest: null,
                     clientSyncRequest: null,
+                    buttonInteraction: null,
                 });
                 break;
             case Activities.apply:
                 request = new ApplyRequest({
                     commandContext: commandContext,
-                    messageReactionRequest: null
+                    messageReactionRequest: null,
+                    buttonInteraction: null,
                 });
                 break;
             case Activities.assign:
                 request = new AssignRequest({
                     commandContext: commandContext,
-                    messageReactionRequest: null
+                    messageReactionRequest: null,
+                    buttonInteraction: null,
+
                 });
                 break;
             case Activities.apply:
                 request = new ApplyRequest({
                     commandContext: commandContext,
-                    messageReactionRequest: null
+                    messageReactionRequest: null,
+                    buttonInteraction: null,
                 });
                 break;
             case Activities.assign:
                 request = new AssignRequest({
                     commandContext: commandContext,
-                    messageReactionRequest: null
+                    messageReactionRequest: null,
+                    buttonInteraction: null,
                 });
                 break;
             case Activities.submit:
                 request = new SubmitRequest({
                     commandContext: commandContext,
-                    messageReactionRequest: null
+                    messageReactionRequest: null,
+                    buttonInteraction: null,
                 });
                 break;
             case Activities.complete:
                 request = new CompleteRequest({
                     commandContext: commandContext,
-                    messageReactionRequest: null
+                    messageReactionRequest: null,
+                    buttonInteraction: null,
                 });
                 break;
             case Activities.list:
                 request = new ListRequest({
                     commandContext: commandContext,
                     messageReactionRequest: null,
-                    listType: null
+                    listType: null,
+                    buttonInteraction: null,
                 });
                 break;
             case Activities.delete:
                 request = new DeleteRequest({
                     commandContext: commandContext,
                     messageReactionRequest: null,
-                    directRequest: null
+                    directRequest: null,
+                    buttonInteraction: null,
                 });
                 break;
             case Activities.help:
                 request = new HelpRequest({
                     commandContext: commandContext,
-                    messageReactionRequest: null
+                    messageReactionRequest: null,
+                    buttonInteraction: null,
                 });
                 break;
             case Activities.tag:
