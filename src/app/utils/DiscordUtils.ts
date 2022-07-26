@@ -1,6 +1,6 @@
 import { AwaitMessagesOptions, ButtonInteraction, Collection, DMChannel, Guild, GuildMember, Message, MessageActionRow, MessageButton, Role, Snowflake, TextChannel } from 'discord.js';
 import { Db } from 'mongodb';
-import { CommandContext } from 'slash-create';
+import { ButtonStyle, CommandContext, ComponentActionRow, ComponentContext, ComponentType } from 'slash-create';
 import { listBounty } from '../activity/bounty/List';
 import client from '../app';
 import { BountyEmbedFields } from '../constants/embeds';
@@ -151,22 +151,37 @@ const DiscordUtils = {
         return messages.first();
     },
 
-    async interactionResponse(buttonInteraction: ButtonInteraction, content: string) {
+    async interactionResponse(buttonInteraction: ButtonInteraction, content: string, link?: string) {
+        const componentActions = link ? new MessageActionRow().addComponents(
+            new MessageButton()
+                .setLabel('View Bounty')
+                .setStyle('LINK')
+                .setURL(link || '')
+        ) : new MessageActionRow();
         try {
-            if (buttonInteraction.deferred || buttonInteraction.replied) await buttonInteraction.editReply({ content: content });
-            else await buttonInteraction.reply({ content: content, ephemeral: true });
+            if (buttonInteraction.deferred || buttonInteraction.replied) await buttonInteraction.editReply({ content: content, components: [componentActions] });
+            else await buttonInteraction.reply({ content: content, ephemeral: true,  components: [componentActions]  });
         } catch (e) {
-            if (e.code === 40060) await buttonInteraction.editReply({ content: content });
+            if (e.code === 40060) await buttonInteraction.editReply({ content: content,  components: [componentActions]  });
             else throw new RuntimeError(e);
         }
     },
 
     // Send a response to a command (use ephemeral) or a reaction (use DM)
-    async activityResponse(commandContext: CommandContext, buttonInteraction: ButtonInteraction, content: string): Promise<void> {
-        if (!!commandContext) // This was a slash command
-            await commandContext.send({ content: content, ephemeral: true });
-        else {// This was a button interaction
-            await this.interactionResponse(buttonInteraction, content);
+    async activityResponse(commandContext: CommandContext, buttonInteraction: ButtonInteraction, content: string, link?: string): Promise<void> {
+        if (!!commandContext) { // This was a slash command
+            const btnComponent =  (link ? [{
+				type: ComponentType.ACTION_ROW,
+				components: [{
+					type: ComponentType.BUTTON,
+					style: ButtonStyle.LINK,
+                    label: 'View Bounty',
+                    url: link,
+				}]
+             }] : []) as ComponentActionRow[];
+            await commandContext.send({ content: content, ephemeral: true, components: btnComponent });
+        } else {// This was a button interaction
+            await this.interactionResponse(buttonInteraction, content, link);
         }
     },
 

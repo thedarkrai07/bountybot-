@@ -53,7 +53,7 @@ export const completeBounty = async (request: CompleteRequest): Promise<void> =>
 		submitterCompleteDM = submitterCompleteDM.concat(`<@${completedByUser.id}> should be paying you with ${getDbResult.dbBountyResult.reward.amount} ${getDbResult.dbBountyResult.reward.currency} soon.`);
 	}
 	await DiscordUtils.activityNotification(submitterCompleteDM, submittedByUser, cardMessage.url);
-    await DiscordUtils.activityResponse(request.commandContext, request.buttonInteraction, creatorCompleteDM);
+    await DiscordUtils.activityResponse(request.commandContext, request.buttonInteraction, creatorCompleteDM, cardMessage.url);
     return;
 }
 

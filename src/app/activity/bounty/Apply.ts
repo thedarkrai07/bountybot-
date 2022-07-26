@@ -52,7 +52,7 @@ export const applyBounty = async (request: ApplyRequest): Promise<any> => {
 
     await DiscordUtils.activityNotification(creatorDM, createdByUser, cardMessage.url);
     const activityMessage = `<@${applyingUser.user.id}>, You have applied for this bounty! Reach out to <@${createdByUser.id}> with any questions: ${cardMessage.url}`;
-    await DiscordUtils.activityResponse(request.commandContext, request.buttonInteraction, activityMessage);
+    await DiscordUtils.activityResponse(request.commandContext, request.buttonInteraction, activityMessage, cardMessage.url);
     await applyingUser.send({ content: activityMessage })
     return;
 };

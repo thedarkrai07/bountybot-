@@ -79,7 +79,7 @@ export const claimBounty = async (request: ClaimRequest): Promise<any> => {
     await DiscordUtils.activityNotification(creatorNotification, createdByUser, claimedBountyCard.url);
 
     const claimaintResponse = `<@${claimedByUser.user.id}>, you have claimed this bounty! Reach out to <@${createdByUser.user.id}> with any questions: <${claimedBountyCard.url}>`;
-    await DiscordUtils.activityResponse(request.commandContext, request.buttonInteraction, claimaintResponse);
+    await DiscordUtils.activityResponse(request.commandContext, request.buttonInteraction, claimaintResponse, claimedBountyCard.url);
     
     return;
 };
