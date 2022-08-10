@@ -36,7 +36,7 @@ export const completeBounty = async (request: CompleteRequest): Promise<void> =>
     const cardMessage = await BountyUtils.canonicalCard(getDbResult.dbBountyResult._id, request.activity);
 	
 	let creatorCompleteDM = 
-        `Thank you for reviewing <${cardMessage.url}>\n` +
+        `Thank you for reviewing the bounty.\n` +
 		`This bounty is now complete.\n`;
         
 	if (!getDbResult.dbBountyResult.paidStatus || getDbResult.dbBountyResult.paidStatus === PaidStatus.unpaid) {
