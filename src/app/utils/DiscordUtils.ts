@@ -1,4 +1,4 @@
-import { AwaitMessagesOptions, ButtonInteraction, Collection, DMChannel, Guild, GuildMember, Message, MessageActionRow, MessageButton, Role, Snowflake, TextChannel } from 'discord.js';
+import { AwaitMessagesOptions, ButtonInteraction, Collection, DMChannel, Guild, GuildMember, Message, MessageActionRow, MessageButton, MessageOptions, Role, Snowflake, TextChannel } from 'discord.js';
 import { Db } from 'mongodb';
 import { ButtonStyle, CommandContext, ComponentActionRow, ComponentContext, ComponentType } from 'slash-create';
 import { listBounty } from '../activity/bounty/List';
@@ -152,17 +152,21 @@ const DiscordUtils = {
     },
 
     async interactionResponse(buttonInteraction: ButtonInteraction, content: string, link?: string) {
-        const componentActions = link ? new MessageActionRow().addComponents(
-            new MessageButton()
-                .setLabel('View Bounty')
-                .setStyle('LINK')
-                .setURL(link || '')
-        ) : new MessageActionRow();
+        let replyOptions: MessageOptions = { content: content };
+        if (link) {
+            const componentActions = new MessageActionRow().addComponents(
+                new MessageButton()
+                    .setLabel('View Bounty')
+                    .setStyle('LINK')
+                    .setURL(link || '')
+            );
+            replyOptions.components = [componentActions];
+        } 
         try {
-            if (buttonInteraction.deferred || buttonInteraction.replied) await buttonInteraction.editReply({ content: content, components: [componentActions] });
-            else await buttonInteraction.reply({ content: content, ephemeral: true,  components: [componentActions]  });
+            if (buttonInteraction.deferred || buttonInteraction.replied) await buttonInteraction.editReply(replyOptions);
+            else await buttonInteraction.reply(Object.assign(replyOptions, { ephemeral: true }));
         } catch (e) {
-            if (e.code === 40060) await buttonInteraction.editReply({ content: content,  components: [componentActions]  });
+            if (e.code === 40060) await buttonInteraction.editReply(replyOptions);
             else throw new RuntimeError(e);
         }
     },
